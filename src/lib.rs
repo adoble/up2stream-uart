@@ -1,7 +1,9 @@
 //! A driver for the Arylic Up2Steam board. This only uses the UART interface.
 //!
 
-#![no_std]
+//#![no_std]
+// DO not include the standard library, except when testing.
+#![cfg_attr(not(test), no_std)]
 #![no_main]
 #![allow(dead_code)]
 
