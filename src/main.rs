@@ -10,7 +10,7 @@ use defmt_rtt as _;
 //use embedded_hal::digital::v2::OutputPin;
 use panic_probe as _;
 
-use rp2040_project_template::Up2Stream;
+use up2stream_uart::Up2Stream;
 // Provide an alias for our BSP so we can switch targets quickly.
 // Uncomment the BSP you included in Cargo.toml, the rest of the code does not need to change.
 use rp_pico as bsp;
