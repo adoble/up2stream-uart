@@ -32,6 +32,8 @@ use bsp::hal::uart::{DataBits, StopBits, UartConfig};
 
 use fugit::RateExtU32;
 
+use core::result::Result;
+
 /// Alias the type for our UART pins to make things clearer.
 type UartPins = (
     hal::gpio::Pin<Gpio8, hal::gpio::Function<hal::gpio::Uart>>,

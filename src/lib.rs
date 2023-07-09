@@ -4,7 +4,7 @@
 //#![no_std]
 // DO not include the standard library, except when testing.
 #![cfg_attr(not(test), no_std)]
-#![no_main]
+//#![no_main]
 #![allow(dead_code)]
 
 // See API description:
@@ -300,3 +300,6 @@ pub enum LoopMode {
     Shuffle,
     Sequence,
 }
+
+#[cfg(test)]
+mod test;
