@@ -32,27 +32,22 @@ const COMMAND_TERMINATOR: char = ';';
 const COMMAND_PARAMETER_START: char = ':';
 const RESPONSE_TERMINATOR: char = '\n';
 
-pub struct Up2Stream<R, W>
-where
-    R: Read<u8>,
-    W: Write<u8>,
-{
-    uart_reader: R,
-    uart_writer: W,
+pub struct Up2Stream<'a, UART: Read<u8> + Write<u8>> {
+    uart: &'a mut UART,
     //rx_buffer: &'r [u8; MAX_SIZE_RESPONSE],
     response: ArrayString<MAX_SIZE_RESPONSE>,
 }
 
-impl<R, W> Up2Stream<R, W>
+impl<'a, UART> Up2Stream<'a, UART>
 where
-    R: Read<u8>,
-    W: Write<u8>,
+    UART: Write<u8> + Read<u8>,
 {
-    /// Create a new Up2Stream driver from a UART reader and writer.
-    pub fn new(uart_reader: R, uart_writer: W) -> Up2Stream<R, W> {
+    /// Create a new Up2Stream driver from an object that inplements the read and write traits.
+    //pub fn new(uart_reader: R, uart_writer: W) -> Up2Stream<R, W> {
+    //pub fn new(uart: impl Read<u8> + Write<u8>) -> Up2Stream<UART> {
+    pub fn new(uart: &mut UART) -> Up2Stream<UART> {
         Up2Stream {
-            uart_reader,
-            uart_writer,
+            uart,
             response: ArrayString::<MAX_SIZE_RESPONSE>::new(),
             //rx_buffer: &mut [0; MAX_SIZE_RESPONSE],
         }
@@ -171,25 +166,23 @@ where
 
     fn send_command(&mut self, command: &str, parameter: &str) -> Result<(), Error> {
         for c in command.chars() {
-            self.uart_writer
-                .write(c as u8)
-                .map_err(|_| Error::SendCommand)?;
+            self.uart.write(c as u8).map_err(|_| Error::SendCommand)?;
         }
 
         if parameter.len() > 0 {
-            self.uart_writer
+            self.uart
                 .write(COMMAND_PARAMETER_START as u8)
                 .map_err(|_| Error::SendCommand)?;
             for c in parameter.chars() {
-                self.uart_writer
-                    .write(c as u8)
-                    .map_err(|_| Error::SendCommand)?;
+                self.uart.write(c as u8).map_err(|_| Error::SendCommand)?;
             }
         }
 
-        self.uart_writer
+        self.uart
             .write(COMMAND_TERMINATOR as u8)
             .map_err(|_| Error::SendCommand)?;
+
+        self.uart.flush().map_err(|_| Error::SendCommand)?;
 
         Ok(())
     }
@@ -216,10 +209,7 @@ where
 
         let c: char = ' ';
         while c != RESPONSE_TERMINATOR {
-            let c = self
-                .uart_reader
-                .read()
-                .map_err(|_| Error::ReadingQueryReponse)?;
+            let c = self.uart.read().map_err(|_| Error::ReadingQueryReponse)?;
             response.push(c as char);
         }
 
@@ -227,6 +217,7 @@ where
     }
 }
 
+#[derive(Debug)]
 pub enum Error {
     NotSupportedForDeviceSource,
     ReadingQueryReponse,
