@@ -3,6 +3,21 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Host debug",
+            "type": "lldb",
+            "request": "launch",
+            "name": "Cargo test",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib"
+                ]
+            },
+            "args": []
+        },
+
+        {
             "preLaunchTask": "rust: cargo build",
             "type": "probe-rs-debug",
             "request": "launch",
@@ -40,6 +55,8 @@
             ],
             "consoleLogLevel": "Info", //Error, Warn, Info, Debug, Trace
             "wireProtocol": "Swd"
-        }
+        },
+
+        
     ]
 }
