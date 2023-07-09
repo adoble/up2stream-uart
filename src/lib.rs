@@ -28,9 +28,9 @@ const MAX_SIZE_RESPONSE: usize = 1024;
 // Commands
 const COMMAND_VER: &str = "VER";
 
-const COMMAND_TERMINATOR: char = ';';
+const COMMAND_DELIMITER: char = ';';
 const COMMAND_PARAMETER_START: char = ':';
-const RESPONSE_TERMINATOR: char = '\n';
+const TERMINATOR: char = '\n';
 
 pub struct Up2Stream<'a, UART: Read<u8> + Write<u8>> {
     uart: &'a mut UART,
@@ -179,7 +179,11 @@ where
         }
 
         self.uart
-            .write(COMMAND_TERMINATOR as u8)
+            .write(COMMAND_DELIMITER as u8)
+            .map_err(|_| Error::SendCommand)?;
+
+        self.uart
+            .write(TERMINATOR as u8)
             .map_err(|_| Error::SendCommand)?;
 
         self.uart.flush().map_err(|_| Error::SendCommand)?;
@@ -188,29 +192,29 @@ where
     }
 
     fn send_query(&mut self, command: &str) -> Result<ArrayString<MAX_SIZE_RESPONSE>, Error> {
-        self.send_command(command, "")?;
+        //self.send_command(command, "")?;
 
-        // let mut rx_buffer: [u8; MAX_SIZE_RESPONSE] = [0; MAX_SIZE_RESPONSE];
-        // let mut rx_count: usize = 0;
-        // let c: char = ' ';
+        for c in command.chars() {
+            self.uart.write(c as u8).map_err(|_| Error::SendCommand)?;
+        }
+        self.uart
+            .write('\n' as u8)
+            .map_err(|_| Error::SendCommand)?;
 
-        // while c != COMMAND_TERMINATOR {
-        //     let c = self
-        //         .uart_reader
-        //         .read()
-        //         .map_err(|e| Error::ReadingQueryReponse)?;
-        //     rx_buf[rx_count] = c;
-        //     rx_count += 1;
-        // }
-
-        // Ok(rx_count)
+        self.uart.flush().map_err(|_| Error::SendCommand)?;
 
         let mut response = ArrayString::<MAX_SIZE_RESPONSE>::new();
 
-        let c: char = ' ';
-        while c != RESPONSE_TERMINATOR {
-            let c = self.uart.read().map_err(|_| Error::ReadingQueryReponse)?;
-            response.push(c as char);
+        //let c: char = ' ';
+        let mut terminator: [u8; 1] = [0; 1];
+        TERMINATOR.encode_utf8(&mut terminator);
+        let mut read_byte;
+        loop {
+            read_byte = self.uart.read().map_err(|_| Error::ReadingQueryReponse)?;
+            if read_byte == terminator[0] {
+                break;
+            }
+            response.push(read_byte as char);
         }
 
         Ok(response)
