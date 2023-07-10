@@ -29,9 +29,9 @@ impl FromStr for Volume {
 }
 
 #[derive(Debug, PartialEq)]
-struct Treble(i8); //-10..10
+pub struct Treble(i8); //-10..10
 impl Treble {
-    fn new(treble: i8) -> Result<Self, Error> {
+    pub fn new(treble: i8) -> Result<Self, Error> {
         let range = -10..=10;
         if range.contains(&treble) {
             Ok(Self(treble))
@@ -45,15 +45,18 @@ impl FromStr for Treble {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let treble = s.parse::<i8>().map_err(|_| Error::InvalidString)?;
-        Ok(Self(treble))
+        let treble_value = s.parse::<i8>().map_err(|_| Error::InvalidString)?;
+
+        let treble = Treble::new(treble_value)?;
+
+        Ok(treble)
     }
 }
 
 #[derive(Debug, PartialEq)]
-struct Bass(i8); //-10..10
+pub struct Bass(i8); //-10..10
 impl Bass {
-    fn new(bass: i8) -> Result<Self, Error> {
+    pub fn new(bass: i8) -> Result<Self, Error> {
         let range = -10..=10;
         if range.contains(&bass) {
             Ok(Self(bass))
@@ -67,14 +70,18 @@ impl FromStr for Bass {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bass = s.parse::<i8>().map_err(|_| Error::InvalidString)?;
-        Ok(Self(bass))
+        let bass_value = s.parse::<i8>().map_err(|_| Error::InvalidString)?;
+
+        let bass = Bass::new(bass_value)?;
+
+        Ok(bass)
     }
 }
 
-struct PlayPreset(u8); // 0..10
+#[derive(Debug, PartialEq)]
+pub struct PlayPreset(u8); // 0..10
 impl PlayPreset {
-    fn new(preset: u8) -> Result<Self, Error> {
+    pub fn new(preset: u8) -> Result<Self, Error> {
         let range = 0..=10;
         if range.contains(&preset) {
             Ok(Self(preset))
@@ -88,8 +95,11 @@ impl FromStr for PlayPreset {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let preset = s.parse::<u8>().map_err(|_| Error::InvalidString)?;
-        Ok(Self(preset))
+        let preset_value = s.parse::<u8>().map_err(|_| Error::InvalidString)?;
+
+        let preset = PlayPreset::new(preset_value)?;
+
+        Ok(preset)
     }
 }
 
@@ -146,5 +156,169 @@ mod test {
 
         let vol = Volume::from_str("XXX");
         assert!(vol.is_err());
+    }
+
+    // ---------------- TREBLE TESTS
+    #[test]
+    fn new_treble() -> Result<(), Error> {
+        let t1 = Treble::new(5)?;
+        let t2 = Treble::new(5)?;
+
+        assert_eq!(t1, t2);
+
+        let t3 = Treble::new(-2)?;
+        assert_ne!(t1, t3);
+
+        Ok(())
+    }
+
+    #[test]
+    fn new_treble_limits() {
+        let mut treble = Treble::new(11);
+        assert!(treble.is_err());
+
+        treble = Treble::new(10);
+        assert!(treble.is_ok());
+
+        treble = Treble::new(0);
+        assert!(treble.is_ok());
+
+        treble = Treble::new(-10);
+        assert!(treble.is_ok());
+
+        treble = Treble::new(-11);
+        assert!(treble.is_err());
+    }
+
+    #[test]
+    fn treble_from_str() {
+        let mut expected_treble = Treble::new(10).unwrap();
+
+        let treble = Treble::from_str("10").unwrap();
+        assert_eq!(treble, expected_treble);
+
+        expected_treble = Treble::new(-10).unwrap();
+        let treble = Treble::from_str("-10").unwrap();
+        assert_eq!(treble, expected_treble);
+
+        expected_treble = Treble::new(0).unwrap();
+        let treble = Treble::from_str("0").unwrap();
+        assert_eq!(treble, expected_treble);
+
+        let treble = Treble::from_str("-11");
+        assert!(treble.is_err());
+
+        let treble = Treble::from_str("101");
+        assert!(treble.is_err());
+
+        let treble = Treble::from_str("XXX");
+        assert!(treble.is_err());
+    }
+
+    // ---------------- preset TESTS
+    #[test]
+    fn new_bass() -> Result<(), Error> {
+        let b1 = Bass::new(5)?;
+        let b2 = Bass::new(5)?;
+
+        assert_eq!(b1, b2);
+
+        let b3 = Bass::new(-2)?;
+        assert_ne!(b1, b3);
+
+        Ok(())
+    }
+
+    #[test]
+    fn new_bass_limits() {
+        let mut bass = Bass::new(11);
+        assert!(bass.is_err());
+
+        bass = Bass::new(10);
+        assert!(bass.is_ok());
+
+        bass = Bass::new(0);
+        assert!(bass.is_ok());
+
+        bass = Bass::new(-10);
+        assert!(bass.is_ok());
+
+        bass = Bass::new(-11);
+        assert!(bass.is_err());
+    }
+
+    #[test]
+    fn bass_from_str() {
+        let mut expected_bass = Bass::new(10).unwrap();
+
+        let bass = Bass::from_str("10").unwrap();
+        assert_eq!(bass, expected_bass);
+
+        expected_bass = Bass::new(-10).unwrap();
+        let bass = Bass::from_str("-10").unwrap();
+        assert_eq!(bass, expected_bass);
+
+        expected_bass = Bass::new(0).unwrap();
+        let bass = Bass::from_str("0").unwrap();
+        assert_eq!(bass, expected_bass);
+
+        let mut bass = Bass::from_str("-11");
+        assert!(bass.is_err());
+
+        bass = Bass::from_str("101");
+        assert!(bass.is_err());
+
+        bass = Bass::from_str("XXX");
+        assert!(bass.is_err());
+    }
+
+    // ---------------- PLAYPRESET TESTS
+    #[test]
+    fn new_preset() -> Result<(), Error> {
+        let p1 = PlayPreset::new(5)?;
+        let p2 = PlayPreset::new(5)?;
+
+        assert_eq!(p1, p2);
+
+        let p3 = PlayPreset::new(3)?;
+        assert_ne!(p1, p3);
+
+        Ok(())
+    }
+
+    #[test]
+    fn new_preset_limits() {
+        let mut preset = PlayPreset::new(11);
+        assert!(preset.is_err());
+
+        preset = PlayPreset::new(10);
+        assert!(preset.is_ok());
+
+        preset = PlayPreset::new(0);
+        assert!(preset.is_ok());
+
+        preset = PlayPreset::new(11);
+        assert!(preset.is_err());
+    }
+
+    #[test]
+    fn preset_from_str() {
+        let mut expected_preset = PlayPreset::new(10).unwrap();
+
+        let mut preset = PlayPreset::from_str("10").unwrap();
+        assert_eq!(preset, expected_preset);
+
+        expected_preset = PlayPreset::new(0).unwrap();
+        preset = PlayPreset::from_str("0").unwrap();
+        assert_eq!(preset, expected_preset);
+
+        let mut preset = PlayPreset::from_str("11");
+        assert!(preset.is_err());
+
+        preset = PlayPreset::from_str("101");
+        assert!(preset.is_err());
+
+        preset = PlayPreset::from_str("XXX");
+        assert!(preset.is_err());
     }
 }
