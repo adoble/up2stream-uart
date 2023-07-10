@@ -25,6 +25,12 @@ use embedded_hal::serial::{Read, Write};
 
 use arrayvec::{ArrayString, ArrayVec};
 
+mod error;
+mod types;
+
+use crate::error::Error;
+use crate::types::Volume;
+
 const MAX_SIZE_RESPONSE: usize = 1024;
 
 // Commands
@@ -252,18 +258,18 @@ where
     }
 }
 
-#[derive(Debug)]
-pub enum Error {
-    NotSupportedForDeviceSource,
-    ReadingQueryReponse,
-    NonUTF8,
-    SendCommand,
-    SourceNotKnown,
-    BooleanParse,
-    OutOfRange,
-    InvalidString,
-    Unimplemented,
-}
+// #[derive(Debug)]
+// pub enum Error {
+//     NotSupportedForDeviceSource,
+//     ReadingQueryReponse,
+//     NonUTF8,
+//     SendCommand,
+//     SourceNotKnown,
+//     BooleanParse,
+//     OutOfRange,
+//     InvalidString,
+//     Unimplemented,
+// }
 
 #[derive(Debug, PartialEq)]
 pub struct DeviceStatus {
@@ -277,29 +283,6 @@ pub struct DeviceStatus {
     playing: bool,
     led: bool,
     upgrading: bool,
-}
-
-#[derive(Debug, PartialEq)]
-struct Volume(u8); //0..100
-
-impl Volume {
-    fn new(volume: u8) -> Result<Volume, Error> {
-        let range = 0..100;
-        if range.contains(&volume) {
-            Ok(Self(volume))
-        } else {
-            Err(Error::OutOfRange)
-        }
-    }
-}
-
-impl FromStr for Volume {
-    type Err = Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let volume = s.parse::<u8>().map_err(|_| Error::InvalidString)?;
-        Ok(Self(volume))
-    }
 }
 
 #[derive(Debug, PartialEq)]

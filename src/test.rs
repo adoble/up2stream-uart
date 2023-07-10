@@ -97,7 +97,7 @@ fn firmware_version_test() {
 }
 
 #[test]
-fn device_status() {
+fn device_status() -> Result<(), Error> {
     let expectations = [
         SerialTransaction::write_many(b"STA\n"),
         SerialTransaction::flush(),
@@ -107,7 +107,7 @@ fn device_status() {
     let expected_device_status = DeviceStatus {
         source: Source::Bluetooth,
         mute: false,
-        volume: Volume(50),
+        volume: Volume::new(50)?,
         treble: Treble(-4),
         bass: Bass(4),
         net: true,
@@ -126,4 +126,6 @@ fn device_status() {
     assert_eq!(device_status, expected_device_status);
 
     serial.done();
+
+    Ok(())
 }
