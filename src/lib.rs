@@ -19,14 +19,17 @@
 
 //use core::str;
 
+use core::str::FromStr;
+
 use embedded_hal::serial::{Read, Write};
 
-use arrayvec::ArrayString;
+use arrayvec::{ArrayString, ArrayVec};
 
 const MAX_SIZE_RESPONSE: usize = 1024;
 
 // Commands
 const COMMAND_VER: &str = "VER";
+const COMMAND_STATUS: &str = "STA";
 
 const COMMAND_DELIMITER: char = ';';
 const COMMAND_PARAMETER_START: char = ':';
@@ -65,11 +68,39 @@ where
         Ok(s)
     }
 
+    pub fn status(&mut self) -> Result<DeviceStatus, Error> {
+        // Response is local to this function as return a device status and not a string slice
+        let response = self
+            .send_query(COMMAND_STATUS)
+            .map_err(|_| Error::SendCommand)?;
+
+        let status_fields: ArrayVec<&str, 20> = response.split(&[':', ',']).collect();
+        // The first field [0] contains the command
+
+        let device_status = DeviceStatus {
+            source: Source::from_str(status_fields[1])?,
+            mute: boolean_from_str(status_fields[2])?,
+            volume: Volume::from_str(status_fields[3])?,
+            treble: Treble::from_str(status_fields[4])?,
+            bass: Bass::from_str(status_fields[5])?,
+            net: boolean_from_str(status_fields[6])?,
+            internet: boolean_from_str(status_fields[7])?,
+            playing: boolean_from_str(status_fields[8])?,
+            led: boolean_from_str(status_fields[9])?,
+            upgrading: boolean_from_str(status_fields[10])?,
+        };
+
+        Ok(device_status)
+    }
+
+    pub fn execute_system_control(&self, _control: SystemControl) -> Result<(), Error> {
+        // let parameter = SystemControl::to_cmd_str();
+
+        // self.send_command(COMMAND_SYS, parameter)
+        Err(Error::Unimplemented)
+    }
+
     /*
-        pub fn status(&self) -> DeviceStatus {}
-
-        pub fn execute_system_control(&self, control: SystemControl) {}
-
         pub fn internet_connection(&self) -> bool {}
 
         pub fn audio_out_enabled(&self) -> bool {}
@@ -227,25 +258,114 @@ pub enum Error {
     ReadingQueryReponse,
     NonUTF8,
     SendCommand,
+    SourceNotKnown,
+    BooleanParse,
+    OutOfRange,
+    InvalidString,
+    Unimplemented,
 }
 
-pub struct DeviceStatus<'d> {
-    source: &'d str,
+#[derive(Debug, PartialEq)]
+pub struct DeviceStatus {
+    source: Source,
     mute: bool,
     volume: Volume,
     treble: Treble,
     bass: Bass,
-    net: &'d str,
-    internet: &'d str,
+    net: bool,
+    internet: bool,
+    playing: bool,
     led: bool,
     upgrading: bool,
 }
 
+#[derive(Debug, PartialEq)]
 struct Volume(u8); //0..100
+
+impl Volume {
+    fn new(volume: u8) -> Result<Volume, Error> {
+        let range = 0..100;
+        if range.contains(&volume) {
+            Ok(Self(volume))
+        } else {
+            Err(Error::OutOfRange)
+        }
+    }
+}
+
+impl FromStr for Volume {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let volume = s.parse::<u8>().map_err(|_| Error::InvalidString)?;
+        Ok(Self(volume))
+    }
+}
+
+#[derive(Debug, PartialEq)]
 struct Treble(i8); //-10..10
+impl Treble {
+    fn new(treble: i8) -> Result<Self, Error> {
+        let range = -10..10;
+        if range.contains(&treble) {
+            Ok(Self(treble))
+        } else {
+            Err(Error::OutOfRange)
+        }
+    }
+}
+
+impl FromStr for Treble {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let treble = s.parse::<i8>().map_err(|_| Error::InvalidString)?;
+        Ok(Self(treble))
+    }
+}
+
+#[derive(Debug, PartialEq)]
 struct Bass(i8); //-10..10
+impl Bass {
+    fn new(bass: i8) -> Result<Self, Error> {
+        let range = -10..10;
+        if range.contains(&bass) {
+            Ok(Self(bass))
+        } else {
+            Err(Error::OutOfRange)
+        }
+    }
+}
+
+impl FromStr for Bass {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let bass = s.parse::<i8>().map_err(|_| Error::InvalidString)?;
+        Ok(Self(bass))
+    }
+}
 
 struct PlayPreset(u8); // 0..10
+impl PlayPreset {
+    fn new(preset: u8) -> Result<Self, Error> {
+        let range = 0..10;
+        if range.contains(&preset) {
+            Ok(Self(preset))
+        } else {
+            Err(Error::OutOfRange)
+        }
+    }
+}
+
+impl FromStr for PlayPreset {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let preset = s.parse::<u8>().map_err(|_| Error::InvalidString)?;
+        Ok(Self(preset))
+    }
+}
 
 pub enum SystemControl {
     Reboot,
@@ -253,16 +373,36 @@ pub enum SystemControl {
     Reset,
 }
 
+#[derive(Debug, PartialEq)]
 pub enum Source {
     Net,
     Usb,
     UsbDac,
-    Linein,
+    LineIn,
+    LineIn2,
     Bluetooth,
     Optical,
     Coax,
     I2S,
     HDMI,
+}
+
+impl Source {
+    pub fn from_str(source_str: &str) -> Result<Source, Error> {
+        match source_str {
+            "NET" => Ok(Source::Net),
+            "USB" => Ok(Source::Usb),
+            "USBDAC" => Ok(Source::UsbDac),
+            "LINE-IN" => Ok(Source::LineIn),
+            "LINE-IN2" => Ok(Source::LineIn2),
+            "BT" => Ok(Source::Bluetooth),
+            "OPT" => Ok(Source::Optical),
+            "COAX" => Ok(Source::Coax),
+            "I2S" => Ok(Source::I2S),
+            "HDMI" => Ok(Source::HDMI),
+            _ => Err(Error::SourceNotKnown), // "USB", "USBDAC", "LINE-IN", "LINE-IN2", "BT", "OPT", "COAX", "I2S", "HDMI",
+        }
+    }
 }
 
 pub enum Playback {
@@ -294,6 +434,14 @@ pub enum LoopMode {
     RepeatShuffle,
     Shuffle,
     Sequence,
+}
+
+fn boolean_from_str(s: &str) -> Result<bool, Error> {
+    match s {
+        "1" => Ok(true),
+        "0" => Ok(false),
+        _ => Err(Error::BooleanParse),
+    }
 }
 
 #[cfg(test)]
