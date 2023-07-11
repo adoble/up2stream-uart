@@ -129,3 +129,27 @@ fn device_status() -> Result<(), Error> {
 
     Ok(())
 }
+
+#[test]
+fn system_control() {
+    let test_strings = vec!["REBOOT", "STANDBYE", "RESET", "RECOVER"];
+
+    let test_states = [
+        SystemControl::Reboot,
+        SystemControl::Standby,
+        SystemControl::Reset,
+        SystemControl::Recover,
+    ];
+
+    let result_strings: Vec<String> = test_states
+        .iter()
+        .map(|v| v.into_parameter_str().to_string())
+        .collect();
+
+    assert_eq!(test_strings, result_strings);
+}
+
+#[test]
+fn execute_system_control() {
+    assert!(true);
+}

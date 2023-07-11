@@ -354,6 +354,22 @@ pub enum SystemControl {
     Reboot,
     Standby,
     Reset,
+    Recover,
+}
+
+impl SystemControl {
+    pub fn into_parameter_str(&self) -> ArrayString<8> {
+        let parameter = match self {
+            Self::Reboot => "REBOOT",
+            Self::Standby => "STANDBYE",
+            Self::Reset => "RESET",
+            Self::Recover => "RECOVER",
+        };
+
+        // This should infallible as the string input
+        // is constrained to the above
+        ArrayString::from_str(parameter).unwrap()
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -428,4 +444,4 @@ fn boolean_from_str(s: &str) -> Result<bool, Error> {
 }
 
 #[cfg(test)]
-mod test;
+mod test_api;
