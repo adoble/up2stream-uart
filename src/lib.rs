@@ -36,6 +36,7 @@ const MAX_SIZE_RESPONSE: usize = 1024;
 // Commands
 const COMMAND_VER: &str = "VER";
 const COMMAND_STATUS: &str = "STA";
+const COMMAND_SYSTEM_CONTROL: &str = "SYS";
 
 const COMMAND_DELIMITER: char = ';';
 const COMMAND_PARAMETER_START: char = ':';
@@ -99,11 +100,12 @@ where
         Ok(device_status)
     }
 
-    pub fn execute_system_control(&self, _control: SystemControl) -> Result<(), Error> {
-        // let parameter = SystemControl::to_cmd_str();
+    pub fn execute_system_control(&mut self, control: SystemControl) -> Result<(), Error> {
+        let parameter = control.into_parameter_str();
 
-        // self.send_command(COMMAND_SYS, parameter)
-        Err(Error::Unimplemented)
+        self.send_command(COMMAND_SYSTEM_CONTROL, &parameter.as_str())?;
+
+        Ok(())
     }
 
     /*

@@ -151,5 +151,18 @@ fn system_control() {
 
 #[test]
 fn execute_system_control() {
-    assert!(true);
+    let expectations = [
+        SerialTransaction::write_many(b"SYS:RESET;\n"),
+        SerialTransaction::flush(),
+    ];
+
+    let mut serial = SerialMock::new(&expectations);
+
+    let mut up2stream_device = Up2Stream::new(&mut serial);
+
+    let response = up2stream_device.execute_system_control(SystemControl::Reset);
+
+    assert!(response.is_ok());
+
+    serial.done();
 }
