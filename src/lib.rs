@@ -37,6 +37,7 @@ const MAX_SIZE_RESPONSE: usize = 1024;
 const COMMAND_VER: &str = "VER";
 const COMMAND_STATUS: &str = "STA";
 const COMMAND_SYSTEM_CONTROL: &str = "SYS";
+const COMMAND_WWW: &str = "WWW";
 
 const COMMAND_DELIMITER: char = ';';
 const COMMAND_PARAMETER_START: char = ':';
@@ -108,8 +109,20 @@ where
         Ok(())
     }
 
+    pub fn internet_connection(&mut self) -> Result<bool, Error> {
+        let response = self.send_query(COMMAND_WWW)?;
+
+        // Response is in the form WWW:{status}\n", so first extract the status
+        let start = COMMAND_WWW.len() + 1;
+        let end = start + 1;
+        if let Some(s) = response.get(start..end) {
+            Ok(boolean_from_str(s)?)
+        } else {
+            Err(Error::IllFormedReponse)
+        }
+    }
     /*
-        pub fn internet_connection(&self) -> bool {}
+
 
         pub fn audio_out_enabled(&self) -> bool {}
 

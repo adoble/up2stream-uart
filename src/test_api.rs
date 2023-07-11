@@ -166,3 +166,43 @@ fn execute_system_control() {
 
     serial.done();
 }
+
+#[test]
+fn internet_connection() {
+    let expectations = [
+        SerialTransaction::write_many(b"WWW\n"),
+        SerialTransaction::flush(),
+        SerialTransaction::read_many(b"WWW:1\n"),
+    ];
+
+    let mut serial = SerialMock::new(&expectations);
+
+    let mut up2stream_device = Up2Stream::new(&mut serial);
+
+    let response = up2stream_device.internet_connection();
+
+    assert!(response.is_ok());
+
+    assert_eq!(response.unwrap(), true);
+
+    serial.done();
+}
+
+#[test]
+fn internet_connection_err() {
+    let expectations = [
+        SerialTransaction::write_many(b"WWW\n"),
+        SerialTransaction::flush(),
+        SerialTransaction::read_many(b"WWWW:1\n"),
+    ];
+
+    let mut serial = SerialMock::new(&expectations);
+
+    let mut up2stream_device = Up2Stream::new(&mut serial);
+
+    let response = up2stream_device.internet_connection();
+
+    assert!(response.is_err());
+
+    serial.done();
+}

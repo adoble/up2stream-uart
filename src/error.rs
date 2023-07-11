@@ -8,5 +8,6 @@ pub enum Error {
     BooleanParse,
     OutOfRange,
     InvalidString,
+    IllFormedReponse,
     Unimplemented,
 }
