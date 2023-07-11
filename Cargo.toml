@@ -3,12 +3,14 @@ edition = "2021"
 name = "up2stream-uart"
 version = "0.1.0"
 readme = "README.md"
+authors = ["Andrew Doble"]
+description = "A UART port driver for the Arylic Up2Stream Mini."
 
 [dependencies]
 #embedded-hal = { version = "0.2.6", features = ["unproven"] }
 embedded-hal = "0.2.6"
 
-defmt = "=0.3.2"                                              # Required so that probe-run works with the picoprobe
+defmt = "=0.3.2"  # Required so that probe-run works with the picoprobe
 defmt-rtt = "0.4"
 panic-probe = { version = "0.3", features = ["print-defmt"] }
 
