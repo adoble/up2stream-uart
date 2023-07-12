@@ -9,5 +9,6 @@ pub enum Error {
     OutOfRange,
     InvalidString,
     IllFormedReponse,
+    CannotConvert,
     Unimplemented,
 }

@@ -17,14 +17,13 @@
 // Baud is 115200,8,N,1, no flow control.
 // Source https://forum.arylic.com/t/latest-api-documents-and-uart-protocols/534/5
 
-//use core::str;
-
 use core::str::FromStr;
 
 use embedded_hal::serial::{Read, Write};
 
 use arrayvec::{ArrayString, ArrayVec};
 
+// TODO consider this for error type conversion: https://doc.rust-lang.org/std/convert/trait.From.html
 mod error;
 mod parameter_types;
 
@@ -371,8 +370,9 @@ pub enum SystemControl {
 }
 
 impl SystemControl {
+    //TODO use a standard trait?
     pub fn into_parameter_str(&self) -> ArrayString<8> {
-        let parameter = match self {
+        let parameter = match self { 
             Self::Reboot => "REBOOT",
             Self::Standby => "STANDBYE",
             Self::Reset => "RESET",

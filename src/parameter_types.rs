@@ -1,5 +1,7 @@
 use core::str::FromStr;
 
+use arrayvec::ArrayString;
+
 use crate::error::Error;
 
 #[derive(Debug, PartialEq)]
@@ -100,6 +102,58 @@ impl FromStr for PlayPreset {
         let preset = PlayPreset::new(preset_value)?;
 
         Ok(preset)
+    }
+}
+
+///  A parameter that is used for on/off/toggle swiths in the UART API.
+///  If the state is either On or Off it can be converted to a boolean (true for On).
+#[derive(Debug, PartialEq)]
+pub enum Switch {
+    On,
+    Off,
+    Toggle,
+}
+
+impl Switch {
+    pub fn to_bool(&self) -> Result<bool, Error> {
+        match self {
+            Self::On => Ok(true),
+            Self::Off => Ok(false),
+            Self::Toggle => Err(Error::CannotConvert),
+        }
+    }
+
+    pub fn into_parameter_str(&self) -> ArrayString<1> {
+        let s = match self {
+            Self::Off => "0",
+            Self::On => "1",
+            Self::Toggle => "T",
+        };
+        // Infallible as string taken from above
+        ArrayString::from(s).unwrap()
+    }
+}
+
+impl From<bool> for Switch {
+    fn from(value: bool) -> Self {
+        if value {
+            Switch::On
+        } else {
+            Switch::Off
+        }
+    }
+}
+
+impl FromStr for Switch {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "0" => Ok(Switch::Off),
+            "1" => Ok(Switch::On),
+            "T" => Ok(Switch::Toggle),
+            _ => Err(Error::InvalidString),
+        }
     }
 }
 
@@ -320,5 +374,48 @@ mod test {
 
         preset = PlayPreset::from_str("XXX");
         assert!(preset.is_err());
+    }
+
+    #[test]
+    fn switch_from() {
+        let mut switch: Switch = Switch::from(true);
+
+        assert_eq!(switch, Switch::On);
+
+        switch = Switch::from(false);
+
+        assert_eq!(switch, Switch::Off);
+    }
+
+    #[test]
+    fn switch_into() {
+        let mut switch = Switch::On;
+
+        let state: bool = switch.to_bool().unwrap();
+
+        assert!(state);
+
+        switch = Switch::Off;
+
+        assert!(!switch.to_bool().unwrap());
+
+        switch = Switch::Toggle;
+
+        assert!(switch.to_bool().is_err());
+    }
+
+    #[test]
+    fn switch_from_string() {
+        assert_eq!(Switch::from_str("0").unwrap(), Switch::Off);
+        assert_eq!(Switch::from_str("1").unwrap(), Switch::On);
+        assert_eq!(Switch::from_str("T").unwrap(), Switch::Toggle);
+        assert!(Switch::from_str("X").is_err());
+    }
+
+    #[test]
+    fn switch_to_string() {
+        assert_eq!(Switch::Off.into_parameter_str().as_str(), "0");
+        assert_eq!(Switch::On.into_parameter_str().as_str(), "1");
+        assert_eq!(Switch::Toggle.into_parameter_str().as_str(), "T");
     }
 }
