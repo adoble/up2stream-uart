@@ -143,24 +143,69 @@ where
         Ok(())
     }
 
+    /// Get the current input source.
+    /// #Example
+    /// ```ignore
+    /// let source: Source = driver.input_source().unwrap();
+    /// match source {
+    /// Source::Bluetooth => todo!(),
+    /// _ => todo!(),
+    /// }
+    /// ```
+    pub fn input_source(&mut self) -> Result<Source, Error> {
+        todo!();
+    }
+
+    /// Select the input source.
+    /// The source is constrained by the values in Source.
+    /// #Example:
+    /// ```ignore
+    /// driver.select_input_source(Source::Bluetooth).unwrap();
+    /// ```
+    pub fn select_input_source(&mut self, source: Source) -> Result<(), Error> {
+        todo!();
+    }
+
+    /// Get the current volume, e.g:
+    /// ```ignore
+    /// let volume: Volume = driver.volume().unwrap();
+    /// let vol_value: u8 = volume.get();
+    ///
+    /// ```
+    pub fn volume(&mut self) -> Result<Volume, Error> {
+        todo!();
+    }
+
+    /// Set the volume, e.g,
+    /// ```ignore
+    /// let volume = Volume::new(52).unwrap();
+    /// driver.set_volume(volume).unwrap();
+    /// ```
+    pub fn set_volume(&mut self, volume: Volume) -> Result<(), Error> {
+        todo!();
+    }
+
+    /// Get if the audio is muted or not. .
+    pub fn mute_status(&mut self) -> Result<bool, Error> {
+        todo!();
+    }
+
+    /// Mute or unmute the audio.
+    pub fn set_mute(&mut self, on_off: bool) -> Result<(), Error> {
+        todo!();
+    }
+
+    /// Get the bass value, e.g.;
+    /// ```ignore
+    /// let bass: Bass = driver.bass().unwrap();
+    /// ```
+    pub fn bass(&mut self) -> Result<Bass, Error> {
+        todo!();
+    }
     /*
 
 
 
-
-        pub fn input_source(&self) -> Source {}
-
-        pub fn select_input_source(&self, source: Source) {}
-
-        pub fn volume(&self) -> Volume {}
-
-        pub fn set_volume(&self, volume: Volume) {}
-
-        pub fn mute_status(&self) {}
-
-        pub fn set_mute(&self, on_off: bool) {}
-
-        pub fn bass(&self) -> Bass {}
 
         pub fn set_bass(&self, bass: Bass) {}
 
