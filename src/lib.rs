@@ -399,8 +399,10 @@ pub enum Source {
     HDMI,
 }
 
-impl Source {
-    pub fn from_str(source_str: &str) -> Result<Source, Error> {
+impl FromStr for Source {
+    type Err = Error;
+
+    fn from_str(source_str: &str) -> Result<Source, Error> {
         match source_str {
             "NET" => Ok(Source::Net),
             "USB" => Ok(Source::Usb),
