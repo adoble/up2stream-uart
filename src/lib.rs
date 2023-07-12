@@ -28,7 +28,7 @@ mod error;
 mod parameter_types;
 
 use crate::error::Error;
-use crate::parameter_types::{Bass, Treble, Volume};
+use crate::parameter_types::{Bass, Switch, Treble, Volume};
 
 const MAX_SIZE_RESPONSE: usize = 1024;
 
@@ -37,6 +37,7 @@ const COMMAND_VER: &str = "VER";
 const COMMAND_STATUS: &str = "STA";
 const COMMAND_SYSTEM_CONTROL: &str = "SYS";
 const COMMAND_WWW: &str = "WWW";
+const COMMAND_AUD: &str = "AUD";
 
 const COMMAND_DELIMITER: char = ';';
 const COMMAND_PARAMETER_START: char = ':';
@@ -115,17 +116,37 @@ where
         let start = COMMAND_WWW.len() + 1;
         let end = start + 1;
         if let Some(s) = response.get(start..end) {
-            Ok(boolean_from_str(s)?)
+            Ok(boolean_from_str(s)?) //TODO switch
         } else {
             Err(Error::IllFormedReponse)
         }
     }
+
+    /// Get if audio out has been enabled.
+    pub fn audio_out(&mut self) -> Result<bool, Error> {
+        let response = self.send_query(COMMAND_AUD)?;
+
+        // Response is in the form AUD:{0/1}\n", so first extract the status
+        let start = COMMAND_AUD.len() + 1;
+        let end = start + 1;
+        if let Some(s) = response.get(start..end) {
+            Switch::from_str(s)?.to_bool()
+        } else {
+            Err(Error::IllFormedReponse)
+        }
+    }
+
+    pub fn set_audio_out(&mut self, enable: bool) -> Result<(), Error> {
+        let switch = Switch::from(enable);
+
+        self.send_command(COMMAND_AUD, switch.into_parameter_str().as_str())?;
+        Ok(())
+    }
+
     /*
 
 
-        pub fn audio_out_enabled(&self) -> bool {}
 
-        pub fn enable_audio_out(&self, enable; bool) {}
 
         pub fn input_source(&self) -> Source {}
 
@@ -372,7 +393,7 @@ pub enum SystemControl {
 impl SystemControl {
     //TODO use a standard trait?
     pub fn into_parameter_str(&self) -> ArrayString<8> {
-        let parameter = match self { 
+        let parameter = match self {
             Self::Reboot => "REBOOT",
             Self::Standby => "STANDBYE",
             Self::Reset => "RESET",

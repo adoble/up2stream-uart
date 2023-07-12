@@ -193,7 +193,7 @@ fn internet_connection_err() {
     let expectations = [
         SerialTransaction::write_many(b"WWW\n"),
         SerialTransaction::flush(),
-        SerialTransaction::read_many(b"WWWW:1\n"),
+        SerialTransaction::read_many(b"WWWW:1\n"), // Incorrect data
     ];
 
     let mut serial = SerialMock::new(&expectations);
@@ -203,6 +203,63 @@ fn internet_connection_err() {
     let response = up2stream_device.internet_connection();
 
     assert!(response.is_err());
+
+    serial.done();
+}
+
+#[test]
+fn audio_out() {
+    let expectations = [
+        SerialTransaction::write_many(b"AUD\n"),
+        SerialTransaction::flush(),
+        SerialTransaction::read_many(b"AUD:1\n"),
+    ];
+
+    let mut serial = SerialMock::new(&expectations);
+
+    let mut up2stream_device = Up2Stream::new(&mut serial);
+
+    let response = up2stream_device.audio_out();
+
+    assert!(response.is_ok());
+
+    assert!(response.unwrap());
+
+    serial.done();
+}
+
+#[test]
+fn audio_out_err() {
+    let expectations = [
+        SerialTransaction::write_many(b"AUD\n"),
+        SerialTransaction::flush(),
+        SerialTransaction::read_many(b"AUD:T\n"),
+    ];
+
+    let mut serial = SerialMock::new(&expectations);
+
+    let mut up2stream_device = Up2Stream::new(&mut serial);
+
+    let response = up2stream_device.audio_out();
+
+    assert!(response.is_err());
+
+    serial.done();
+}
+#[test]
+fn set_audio_out() {
+    let expectations = [
+        SerialTransaction::write_many(b"AUD:1;\n"),
+        SerialTransaction::flush(),
+    ];
+
+    let mut serial = SerialMock::new(&expectations);
+
+    let mut up2stream_device = Up2Stream::new(&mut serial);
+
+    let response = up2stream_device.set_audio_out(true);
+
+    assert!(response.is_ok());
 
     serial.done();
 }
