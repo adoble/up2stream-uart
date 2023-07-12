@@ -71,7 +71,7 @@ where
             .send_query(COMMAND_VER)
             .map_err(|_| Error::SendCommand)?;
 
-        let s = self.response.as_str().clone();
+        let s = self.response.as_str();
 
         Ok(s)
     }
