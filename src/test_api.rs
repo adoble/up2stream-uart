@@ -336,3 +336,58 @@ fn set_volume() {
 
     serial.done();
 }
+
+#[test]
+fn mute_status() {
+    let expectations = [
+        SerialTransaction::write_many(b"MUT\n"),
+        SerialTransaction::flush(),
+        SerialTransaction::read_many(b"MUT:0\n"),
+    ];
+
+    let mut serial = SerialMock::new(&expectations);
+
+    let mut up2stream_device = Up2Stream::new(&mut serial);
+
+    let response = up2stream_device.mute_status().unwrap();
+
+    assert!(!response);
+
+    serial.done();
+}
+
+#[test]
+fn set_mute() {
+    let expectations = [
+        SerialTransaction::write_many(b"MUT:1;\n"),
+        SerialTransaction::flush(),
+    ];
+
+    let mut serial = SerialMock::new(&expectations);
+
+    let mut up2stream_device = Up2Stream::new(&mut serial);
+
+    let response = up2stream_device.set_mute(Switch::On);
+
+    assert!(response.is_ok());
+
+    serial.done();
+}
+
+#[test]
+fn toogle_mute() {
+    let expectations = [
+        SerialTransaction::write_many(b"MUT:T;\n"),
+        SerialTransaction::flush(),
+    ];
+
+    let mut serial = SerialMock::new(&expectations);
+
+    let mut up2stream_device = Up2Stream::new(&mut serial);
+
+    let response = up2stream_device.set_mute(Switch::Toggle);
+
+    assert!(response.is_ok());
+
+    serial.done();
+}

@@ -224,12 +224,28 @@ where
 
     /// Get if the audio is muted or not. .
     pub fn mute_status(&mut self) -> Result<bool, Error> {
-        todo!();
+        let response = self.send_query(COMMAND_MUT)?;
+
+        // Response is in the form MUT:{0/1}\n", so first extract the status
+        let parts: ArrayVec<&str, 2> = response.split(":").collect();
+
+        let status = Switch::from_str(parts[1])?.to_bool()?;
+
+        Ok(status)
     }
 
     /// Mute or unmute the audio.
-    pub fn set_mute(&mut self, on_off: bool) -> Result<(), Error> {
-        todo!();
+    /// # Examples
+    /// To mute:
+    /// ```ignore
+    /// device.set_mute(Switch::On).unwrap();
+    /// ```
+    /// To toggle the mute status:
+    /// ```ignore
+    /// device.set_mute(Switch::Toggle).unwrap();
+    /// ```
+    pub fn set_mute(&mut self, switch: Switch) -> Result<(), Error> {
+        self.send_command(COMMAND_MUT, switch.into_parameter_str().as_str())
     }
 
     /// Get the bass value, e.g.;
