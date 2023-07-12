@@ -87,15 +87,15 @@ where
 
         let device_status = DeviceStatus {
             source: Source::from_str(status_fields[1])?,
-            mute: boolean_from_str(status_fields[2])?,
+            mute: Switch::from_str(status_fields[2])?.to_bool()?,
             volume: Volume::from_str(status_fields[3])?,
             treble: Treble::from_str(status_fields[4])?,
             bass: Bass::from_str(status_fields[5])?,
-            net: boolean_from_str(status_fields[6])?,
-            internet: boolean_from_str(status_fields[7])?,
-            playing: boolean_from_str(status_fields[8])?,
-            led: boolean_from_str(status_fields[9])?,
-            upgrading: boolean_from_str(status_fields[10])?,
+            net: Switch::from_str(status_fields[6])?.to_bool()?,
+            internet: Switch::from_str(status_fields[7])?.to_bool()?,
+            playing: Switch::from_str(status_fields[8])?.to_bool()?,
+            led: Switch::from_str(status_fields[9])?.to_bool()?,
+            upgrading: Switch::from_str(status_fields[10])?.to_bool()?,
         };
 
         Ok(device_status)
@@ -116,7 +116,7 @@ where
         let start = COMMAND_WWW.len() + 1;
         let end = start + 1;
         if let Some(s) = response.get(start..end) {
-            Ok(boolean_from_str(s)?) //TODO switch
+            Switch::from_str(s)?.to_bool()
         } else {
             Err(Error::IllFormedReponse)
         }
@@ -469,14 +469,6 @@ pub enum LoopMode {
     RepeatShuffle,
     Shuffle,
     Sequence,
-}
-
-fn boolean_from_str(s: &str) -> Result<bool, Error> {
-    match s {
-        "1" => Ok(true),
-        "0" => Ok(false),
-        _ => Err(Error::BooleanParse),
-    }
 }
 
 #[cfg(test)]

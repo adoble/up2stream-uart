@@ -43,13 +43,6 @@ fn send_query() {
 }
 
 #[test]
-fn boolean_from_string() {
-    assert!(boolean_from_str("1").unwrap());
-    assert!(!boolean_from_str("0").unwrap());
-    assert!(boolean_from_str("T").is_err());
-}
-
-#[test]
 fn source_from_string() {
     const NUMBER_SOURCES: usize = 10;
     let source_strings: [&str; NUMBER_SOURCES] = [
