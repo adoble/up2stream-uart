@@ -256,3 +256,44 @@ fn set_audio_out() {
 
     serial.done();
 }
+
+#[test]
+fn input_source() {
+    let expectations = [
+        SerialTransaction::write_many(b"SRC\n"),
+        SerialTransaction::flush(),
+        SerialTransaction::read_many(b"SRC:BT\n"),
+    ];
+
+    let mut serial = SerialMock::new(&expectations);
+
+    let mut up2stream_device = Up2Stream::new(&mut serial);
+
+    let response = up2stream_device.input_source();
+
+    assert!(response.is_ok());
+
+    let source = response.unwrap();
+
+    assert_eq!(source, Source::Bluetooth);
+
+    serial.done();
+}
+
+#[test]
+fn select_input_source() {
+    let expectations = [
+        SerialTransaction::write_many(b"SRC:COAX;\n"),
+        SerialTransaction::flush(),
+    ];
+
+    let mut serial = SerialMock::new(&expectations);
+
+    let mut up2stream_device = Up2Stream::new(&mut serial);
+
+    let response = up2stream_device.select_input_source(Source::Coax);
+
+    assert!(response.is_ok());
+
+    serial.done();
+}

@@ -38,6 +38,7 @@ const COMMAND_STATUS: &str = "STA";
 const COMMAND_SYSTEM_CONTROL: &str = "SYS";
 const COMMAND_WWW: &str = "WWW";
 const COMMAND_AUD: &str = "AUD";
+const COMMAND_SRC: &str = "SRC";
 
 const COMMAND_DELIMITER: char = ';';
 const COMMAND_PARAMETER_START: char = ':';
@@ -139,8 +140,10 @@ where
     pub fn set_audio_out(&mut self, enable: bool) -> Result<(), Error> {
         let switch = Switch::from(enable);
 
-        self.send_command(COMMAND_AUD, switch.into_parameter_str().as_str())?;
-        Ok(())
+        // self.send_command(COMMAND_AUD, switch.into_parameter_str().as_str())?;
+        // Ok(())
+
+        self.send_command(COMMAND_AUD, switch.into_parameter_str().as_str())
     }
 
     /// Get the current input source.
@@ -153,7 +156,13 @@ where
     /// }
     /// ```
     pub fn input_source(&mut self) -> Result<Source, Error> {
-        todo!();
+        let response = self.send_query(COMMAND_SRC)?;
+
+        // A response is in the form
+        // SRC:{source string}
+        let parts: ArrayVec<&str, 2> = response.split(":").collect();
+        let source = Source::from_str(parts[1])?;
+        Ok(source)
     }
 
     /// Select the input source.
@@ -163,7 +172,7 @@ where
     /// driver.select_input_source(Source::Bluetooth).unwrap();
     /// ```
     pub fn select_input_source(&mut self, source: Source) -> Result<(), Error> {
-        todo!();
+        self.send_command(COMMAND_SRC, source.into_parameter_str().as_str())
     }
 
     /// Get the current volume, e.g:
@@ -451,6 +460,7 @@ impl SystemControl {
     }
 }
 
+// TODO move this to parameter_types
 #[derive(Debug, PartialEq)]
 pub enum Source {
     Net,
@@ -464,7 +474,24 @@ pub enum Source {
     I2S,
     HDMI,
 }
+impl Source {
+    pub fn into_parameter_str(&self) -> ArrayString<8> {
+        let s = match self {
+            Self::Net => "NET",
+            Self::Usb => "USB",
+            Self::UsbDac => "USBDAC",
+            Self::LineIn => "LINE-IN",
+            Self::LineIn2 => "LINE-IN2",
+            Self::Bluetooth => "BT",
+            Self::Optical => "OPT",
+            Self::Coax => "COAX",
+            Self::I2S => "I2S",
+            Self::HDMI => "HDMI",
+        };
 
+        ArrayString::from(s).unwrap()
+    }
+}
 impl FromStr for Source {
     type Err = Error;
 
