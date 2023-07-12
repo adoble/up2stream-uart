@@ -104,7 +104,7 @@ where
     pub fn execute_system_control(&mut self, control: SystemControl) -> Result<(), Error> {
         let parameter = control.into_parameter_str();
 
-        self.send_command(COMMAND_SYSTEM_CONTROL, &parameter.as_str())?;
+        self.send_command(COMMAND_SYSTEM_CONTROL, parameter.as_str())?;
 
         Ok(())
     }
@@ -221,7 +221,7 @@ where
             self.uart.write(c as u8).map_err(|_| Error::SendCommand)?;
         }
 
-        if parameter.len() > 0 {
+        if !parameter.is_empty() {
             self.uart
                 .write(COMMAND_PARAMETER_START as u8)
                 .map_err(|_| Error::SendCommand)?;
@@ -249,9 +249,7 @@ where
         for c in command.chars() {
             self.uart.write(c as u8).map_err(|_| Error::SendCommand)?;
         }
-        self.uart
-            .write('\n' as u8)
-            .map_err(|_| Error::SendCommand)?;
+        self.uart.write(b'\n').map_err(|_| Error::SendCommand)?;
 
         self.uart.flush().map_err(|_| Error::SendCommand)?;
 
