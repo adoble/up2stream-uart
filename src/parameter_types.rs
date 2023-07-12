@@ -16,6 +16,10 @@ impl Volume {
             Err(Error::OutOfRange)
         }
     }
+
+    pub fn get(&self) -> u8 {
+        self.0
+    }
 }
 
 impl FromStr for Volume {
