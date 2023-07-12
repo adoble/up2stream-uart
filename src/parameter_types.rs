@@ -20,6 +20,21 @@ impl Volume {
     pub fn get(&self) -> u8 {
         self.0
     }
+
+    pub fn into_parameter_str(&self) -> ArrayString<3> {
+        let mut buf: ArrayString<3> = ArrayString::new();
+        let mut n = self.0;
+        if n >= 10 {
+            if n >= 100 {
+                buf.push((b'0' + n / 100) as char);
+                n %= 100;
+            }
+            buf.push((b'0' + n / 10) as char);
+            n %= 10;
+        }
+        buf.push((b'0' + n) as char);
+        buf
+    }
 }
 
 impl FromStr for Volume {
@@ -214,6 +229,61 @@ mod test {
 
         let vol = Volume::from_str("XXX");
         assert!(vol.is_err());
+    }
+
+    #[test]
+    fn volume_parameter_string() {
+        assert_eq!(
+            Volume::new(100).unwrap().into_parameter_str(),
+            ArrayString::from("100").unwrap()
+        );
+
+        assert_eq!(
+            Volume::new(99).unwrap().into_parameter_str(),
+            ArrayString::from("99").unwrap()
+        );
+
+        assert_eq!(
+            Volume::new(75).unwrap().into_parameter_str(),
+            ArrayString::from("75").unwrap()
+        );
+
+        assert_eq!(
+            Volume::new(23).unwrap().into_parameter_str(),
+            ArrayString::from("23").unwrap()
+        );
+
+        assert_eq!(
+            Volume::new(10).unwrap().into_parameter_str(),
+            ArrayString::from("10").unwrap()
+        );
+
+        assert_eq!(
+            Volume::new(7).unwrap().into_parameter_str(),
+            ArrayString::from("7").unwrap()
+        );
+
+        assert_eq!(
+            Volume::new(1).unwrap().into_parameter_str(),
+            ArrayString::from("1").unwrap()
+        );
+
+        assert_eq!(
+            Volume::new(0).unwrap().into_parameter_str(),
+            ArrayString::from("0").unwrap()
+        );
+    }
+
+    #[test]
+    fn volume_parameter_string2() {
+        let test_input: [u8; 8] = [100, 99, 75, 23, 10, 7, 1, 0];
+
+        let expected: [&str; 8] = ["100", "99", "75", "23", "10", "7", "1", "0"];
+
+        for n in test_input.iter().enumerate() {
+            let vol = Volume::new(*n.1).unwrap().into_parameter_str();
+            assert_eq!(vol, ArrayString::from(expected[n.0]).unwrap());
+        }
     }
 
     // ---------------- TREBLE TESTS

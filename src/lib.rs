@@ -39,6 +39,27 @@ const COMMAND_SYSTEM_CONTROL: &str = "SYS";
 const COMMAND_WWW: &str = "WWW";
 const COMMAND_AUD: &str = "AUD";
 const COMMAND_SRC: &str = "SRC";
+const COMMAND_VOL: &str = "VOL";
+const COMMAND_MUT: &str = "MUT";
+const COMMAND_BAS: &str = "BAS";
+const COMMAND_TRE: &str = "TRE";
+const COMMAND_POP: &str = "POP";
+const COMMAND_STP: &str = "STP";
+const COMMAND_NXT: &str = "NXT";
+const COMMAND_PRE: &str = "PRE";
+const COMMAND_BTC: &str = "BTC";
+const COMMAND_PLA: &str = "PLA";
+const COMMAND_CHN: &str = "CHN";
+const COMMAND_MRM: &str = "MRM";
+const COMMAND_LED: &str = "LED";
+const COMMAND_BEP: &str = "BEP";
+const COMMAND_PST: &str = "PST";
+const COMMAND_VBS: &str = "VBS";
+const COMMAND_WRS: &str = "WRS";
+const COMMAND_LPM: &str = "LPM";
+const COMMAND_NAM: &str = "NAM";
+const COMMAND_ETH: &str = "ETH";
+const COMMAND_WIF: &str = "WIF";
 
 const COMMAND_DELIMITER: char = ';';
 const COMMAND_PARAMETER_START: char = ':';
@@ -182,7 +203,14 @@ where
     ///
     /// ```
     pub fn volume(&mut self) -> Result<Volume, Error> {
-        todo!();
+        let response = self.send_query(COMMAND_VOL)?;
+
+        // Response is in the form VOL:{vol}", so first extract the volume
+        let parts: ArrayVec<&str, 2> = response.split(":").collect();
+
+        let volume = Volume::from_str(parts[1])?;
+
+        Ok(volume)
     }
 
     /// Set the volume, e.g,
@@ -191,7 +219,7 @@ where
     /// driver.set_volume(volume).unwrap();
     /// ```
     pub fn set_volume(&mut self, volume: Volume) -> Result<(), Error> {
-        todo!();
+        self.send_command(COMMAND_VOL, volume.into_parameter_str().as_str())
     }
 
     /// Get if the audio is muted or not. .

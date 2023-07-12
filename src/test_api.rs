@@ -297,3 +297,42 @@ fn select_input_source() {
 
     serial.done();
 }
+
+#[test]
+fn volume() {
+    let expectations = [
+        SerialTransaction::write_many(b"VOL\n"),
+        SerialTransaction::flush(),
+        SerialTransaction::read_many(b"VOL:50\n"),
+    ];
+
+    let mut serial = SerialMock::new(&expectations);
+
+    let mut up2stream_device = Up2Stream::new(&mut serial);
+
+    let response = up2stream_device.volume();
+
+    assert!(response.is_ok());
+
+    assert_eq!(response.unwrap(), Volume::new(50).unwrap());
+
+    serial.done();
+}
+
+#[test]
+fn set_volume() {
+    let expectations = [
+        SerialTransaction::write_many(b"VOL:34;\n"),
+        SerialTransaction::flush(),
+    ];
+
+    let mut serial = SerialMock::new(&expectations);
+
+    let mut up2stream_device = Up2Stream::new(&mut serial);
+
+    let response = up2stream_device.set_volume(Volume::new(34).unwrap());
+
+    assert!(response.is_ok());
+
+    serial.done();
+}
