@@ -26,10 +26,10 @@ use embedded_hal::serial::{Read, Write};
 use arrayvec::{ArrayString, ArrayVec};
 
 mod error;
-mod types;
+mod parameter_types;
 
 use crate::error::Error;
-use crate::types::{Bass, Treble, Volume};
+use crate::parameter_types::{Bass, Treble, Volume};
 
 const MAX_SIZE_RESPONSE: usize = 1024;
 
