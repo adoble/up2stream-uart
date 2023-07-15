@@ -4,6 +4,21 @@ use arrayvec::ArrayString;
 
 use crate::error::Error;
 
+fn base_10_bytes(mut value: u64, buf: &mut [u8]) -> &[u8] {
+    if value == 0 {
+        return b"0";
+    }
+    let mut i = 0;
+    while value > 0 {
+        buf[i] = (value % 10) as u8 + b'0';
+        value /= 10;
+        i += 1;
+    }
+    let slice = &mut buf[..i];
+    slice.reverse();
+    &*slice
+}
+
 #[derive(Debug, PartialEq)]
 pub struct Volume(u8); //0..100
 
@@ -85,6 +100,8 @@ impl Bass {
             Err(Error::OutOfRange)
         }
     }
+
+    // into_parameter_string - see https://doc.rust-lang.org/src/alloc/string.rs.html#2570
 }
 
 impl FromStr for Bass {
@@ -180,6 +197,21 @@ impl FromStr for Switch {
 mod test {
 
     use super::*;
+
+    #[test]
+    fn test_base_10_bytes() {
+        let mut buf: [u8; 3] = [0; 3];
+        assert_eq!(base_10_bytes(34, &mut buf), b"34");
+        assert_eq!(base_10_bytes(255, &mut buf), b"255");
+        assert_eq!(base_10_bytes(105, &mut buf), b"105");
+        assert_eq!(base_10_bytes(100, &mut buf), b"100");
+        assert_eq!(base_10_bytes(99, &mut buf), b"99");
+        assert_eq!(base_10_bytes(45, &mut buf), b"45");
+        assert_eq!(base_10_bytes(10, &mut buf), b"10");
+        assert_eq!(base_10_bytes(5, &mut buf), b"5");
+        assert_eq!(base_10_bytes(1, &mut buf), b"1");
+        assert_eq!(base_10_bytes(0, &mut buf), b"0");
+    }
 
     #[test]
     fn new_volume() -> Result<(), Error> {
