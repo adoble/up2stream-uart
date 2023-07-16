@@ -163,15 +163,17 @@ impl Switch {
         }
     }
 
-    pub fn into_parameter_str(&self, buf: &mut [u8]) -> &[u8] {
+    pub fn into_parameter_str<'a>(&self, buf: &'a mut [u8]) -> &'a [u8] {
         let s = match self {
             Self::Off => "0",
             Self::On => "1",
             Self::Toggle => "T",
         };
 
+        buf[0] = s.as_bytes()[0];
+
         // Returned slice the same length as the parameter string
-        &s.as_bytes()[0..1]
+        &buf[0..1]
     }
 }
 
