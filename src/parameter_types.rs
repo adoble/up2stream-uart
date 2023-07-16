@@ -1,7 +1,5 @@
 use core::str::FromStr;
 
-use arrayvec::ArrayString;
-
 use crate::error::Error;
 
 fn base_10_bytes(mut value: u64, buf: &mut [u8]) -> &[u8] {
@@ -36,19 +34,25 @@ impl Volume {
         self.0
     }
 
-    pub fn into_parameter_str(&self) -> ArrayString<3> {
-        let mut buf: ArrayString<3> = ArrayString::new();
-        let mut n = self.0;
-        if n >= 10 {
-            if n >= 100 {
-                buf.push((b'0' + n / 100) as char);
-                n %= 100;
-            }
-            buf.push((b'0' + n / 10) as char);
-            n %= 10;
+    pub fn into_parameter_str<'a>(&self, buf: &'a mut [u8]) -> &'a [u8] {
+        let mut value = self.0;
+        if value == 0 {
+            //return b"0";
+            buf[0] = b'0';
+            return &buf[..1];
         }
-        buf.push((b'0' + n) as char);
-        buf
+        let mut i = 0;
+        while value > 0 {
+            buf[i] = (value % 10) as u8 + b'0';
+            value /= 10;
+            i += 1;
+        }
+        // let slice = &mut buf[..i];
+        // slice.reverse();
+        // &*slice
+        buf[..i].reverse();
+        // SAFETY: ??
+        &buf[..i]
     }
 }
 
@@ -159,14 +163,15 @@ impl Switch {
         }
     }
 
-    pub fn into_parameter_str(&self) -> ArrayString<1> {
+    pub fn into_parameter_str(&self, buf: &mut [u8]) -> &[u8] {
         let s = match self {
             Self::Off => "0",
             Self::On => "1",
             Self::Toggle => "T",
         };
-        // Infallible as string taken from above
-        ArrayString::from(s).unwrap()
+
+        // Returned slice the same length as the parameter string
+        &s.as_bytes()[0..1]
     }
 }
 
@@ -265,45 +270,46 @@ mod test {
 
     #[test]
     fn volume_parameter_string() {
+        let mut buf = [0; 3];
         assert_eq!(
-            Volume::new(100).unwrap().into_parameter_str(),
-            ArrayString::from("100").unwrap()
+            Volume::new(100).unwrap().into_parameter_str(&mut buf),
+            b"100"
         );
 
-        assert_eq!(
-            Volume::new(99).unwrap().into_parameter_str(),
-            ArrayString::from("99").unwrap()
-        );
+        // assert_eq!(
+        //     Volume::new(99).unwrap().into_parameter_str(),
+        //     ArrayString::from("99").unwrap()
+        // );
 
-        assert_eq!(
-            Volume::new(75).unwrap().into_parameter_str(),
-            ArrayString::from("75").unwrap()
-        );
+        // assert_eq!(
+        //     Volume::new(75).unwrap().into_parameter_str(),
+        //     ArrayString::from("75").unwrap()
+        // );
 
-        assert_eq!(
-            Volume::new(23).unwrap().into_parameter_str(),
-            ArrayString::from("23").unwrap()
-        );
+        // assert_eq!(
+        //     Volume::new(23).unwrap().into_parameter_str(),
+        //     ArrayString::from("23").unwrap()
+        // );
 
-        assert_eq!(
-            Volume::new(10).unwrap().into_parameter_str(),
-            ArrayString::from("10").unwrap()
-        );
+        // assert_eq!(
+        //     Volume::new(10).unwrap().into_parameter_str(),
+        //     ArrayString::from("10").unwrap()
+        // );
 
-        assert_eq!(
-            Volume::new(7).unwrap().into_parameter_str(),
-            ArrayString::from("7").unwrap()
-        );
+        // assert_eq!(
+        //     Volume::new(7).unwrap().into_parameter_str(),
+        //     ArrayString::from("7").unwrap()
+        // );
 
-        assert_eq!(
-            Volume::new(1).unwrap().into_parameter_str(),
-            ArrayString::from("1").unwrap()
-        );
+        // assert_eq!(
+        //     Volume::new(1).unwrap().into_parameter_str(),
+        //     ArrayString::from("1").unwrap()
+        // );
 
-        assert_eq!(
-            Volume::new(0).unwrap().into_parameter_str(),
-            ArrayString::from("0").unwrap()
-        );
+        // assert_eq!(
+        //     Volume::new(0).unwrap().into_parameter_str(),
+        //     ArrayString::from("0").unwrap()
+        // );
     }
 
     #[test]
@@ -312,9 +318,11 @@ mod test {
 
         let expected: [&str; 8] = ["100", "99", "75", "23", "10", "7", "1", "0"];
 
+        let mut buf = [0; 3];
         for n in test_input.iter().enumerate() {
-            let vol = Volume::new(*n.1).unwrap().into_parameter_str();
-            assert_eq!(vol, ArrayString::from(expected[n.0]).unwrap());
+            let vol = Volume::new(*n.1).unwrap().into_parameter_str(&mut buf);
+            //assert_eq!(vol, ArrayString::from(expected[n.0]).unwrap());
+            assert_eq!(vol, expected[n.0].as_bytes());
         }
     }
 
@@ -520,8 +528,10 @@ mod test {
 
     #[test]
     fn switch_to_string() {
-        assert_eq!(Switch::Off.into_parameter_str().as_str(), "0");
-        assert_eq!(Switch::On.into_parameter_str().as_str(), "1");
-        assert_eq!(Switch::Toggle.into_parameter_str().as_str(), "T");
+        let mut buf = [0; 1];
+
+        assert_eq!(Switch::Off.into_parameter_str(&mut buf), b"0");
+        assert_eq!(Switch::On.into_parameter_str(&mut buf), b"1");
+        assert_eq!(Switch::Toggle.into_parameter_str(&mut buf), b"T");
     }
 }

@@ -124,9 +124,9 @@ where
     }
 
     pub fn execute_system_control(&mut self, control: SystemControl) -> Result<(), Error> {
-        let parameter = control.into_parameter_str();
+        let mut buf = [0; 64];
 
-        self.send_command(COMMAND_SYSTEM_CONTROL, parameter.as_str())?;
+        self.send_command(COMMAND_SYSTEM_CONTROL, control.into_parameter_str(&mut buf))?;
 
         Ok(())
     }
@@ -161,10 +161,9 @@ where
     pub fn set_audio_out(&mut self, enable: bool) -> Result<(), Error> {
         let switch = Switch::from(enable);
 
-        // self.send_command(COMMAND_AUD, switch.into_parameter_str().as_str())?;
-        // Ok(())
+        let mut buf = [0; 1];
 
-        self.send_command(COMMAND_AUD, switch.into_parameter_str().as_str())
+        self.send_command(COMMAND_AUD, switch.into_parameter_str(&mut buf))
     }
 
     /// Get the current input source.
@@ -193,7 +192,8 @@ where
     /// driver.select_input_source(Source::Bluetooth).unwrap();
     /// ```
     pub fn select_input_source(&mut self, source: Source) -> Result<(), Error> {
-        self.send_command(COMMAND_SRC, source.into_parameter_str().as_str())
+        let mut buf = [0; 20];
+        self.send_command(COMMAND_SRC, source.into_parameter_str(&mut buf))
     }
 
     /// Get the current volume, e.g:
@@ -219,7 +219,8 @@ where
     /// driver.set_volume(volume).unwrap();
     /// ```
     pub fn set_volume(&mut self, volume: Volume) -> Result<(), Error> {
-        self.send_command(COMMAND_VOL, volume.into_parameter_str().as_str())
+        let mut buf = [0; 3];
+        self.send_command(COMMAND_VOL, volume.into_parameter_str(&mut buf))
     }
 
     /// Get if the audio is muted or not. .
@@ -245,7 +246,8 @@ where
     /// device.set_mute(Switch::Toggle).unwrap();
     /// ```
     pub fn set_mute(&mut self, switch: Switch) -> Result<(), Error> {
-        self.send_command(COMMAND_MUT, switch.into_parameter_str().as_str())
+        let mut buf = [0; 1];
+        self.send_command(COMMAND_MUT, switch.into_parameter_str(&mut buf))
     }
 
     /// Get the bass value, e.g.;
@@ -334,7 +336,7 @@ where
 
     //TODO more commands for version 4 here https://docs.google.com/spreadsheets/d/1LT6nsaCmg2B6vV0M2iOusxZ-hIqgDeqB0SLPTtZokCo/edit#gid=1444188925
 
-    fn send_command(&mut self, command: &str, parameter: &str) -> Result<(), Error> {
+    fn send_command(&mut self, command: &str, parameter: &[u8]) -> Result<(), Error> {
         for c in command.chars() {
             self.uart.write(c as u8).map_err(|_| Error::SendCommand)?;
         }
@@ -343,8 +345,8 @@ where
             self.uart
                 .write(COMMAND_PARAMETER_START as u8)
                 .map_err(|_| Error::SendCommand)?;
-            for c in parameter.chars() {
-                self.uart.write(c as u8).map_err(|_| Error::SendCommand)?;
+            for c in parameter {
+                self.uart.write(*c).map_err(|_| Error::SendCommand)?;
             }
         }
 
@@ -490,17 +492,17 @@ pub enum SystemControl {
 
 impl SystemControl {
     //TODO use a standard trait?
-    pub fn into_parameter_str(&self) -> ArrayString<8> {
+    pub fn into_parameter_str(&self, buf: &mut [u8]) -> &[u8] {
         let parameter = match self {
             Self::Reboot => "REBOOT",
-            Self::Standby => "STANDBYE",
+            Self::Standby => "STANDBY",
             Self::Reset => "RESET",
             Self::Recover => "RECOVER",
         };
 
-        // This should infallible as the string input
-        // is constrained to the above
-        ArrayString::from_str(parameter).unwrap()
+        // Return the slice that has the same nmber of characters as
+        // the parameter
+        &parameter.as_bytes()[..parameter.len()]
     }
 }
 
@@ -519,7 +521,7 @@ pub enum Source {
     HDMI,
 }
 impl Source {
-    pub fn into_parameter_str(&self) -> ArrayString<8> {
+    pub fn into_parameter_str(&self, buf: &mut [u8]) -> &[u8] {
         let s = match self {
             Self::Net => "NET",
             Self::Usb => "USB",
@@ -533,7 +535,8 @@ impl Source {
             Self::HDMI => "HDMI",
         };
 
-        ArrayString::from(s).unwrap()
+        // Returned slice the same length as the parameter string
+        &s.as_bytes()[..s.len()]
     }
 }
 impl FromStr for Source {
