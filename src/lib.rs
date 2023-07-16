@@ -492,7 +492,7 @@ pub enum SystemControl {
 
 impl SystemControl {
     //TODO use a standard trait?
-    pub fn into_parameter_str(&self, buf: &mut [u8]) -> &[u8] {
+    pub fn into_parameter_str<'a>(&self, buf: &'a mut [u8]) -> &'a [u8] {
         let parameter = match self {
             Self::Reboot => "REBOOT",
             Self::Standby => "STANDBY",
@@ -500,9 +500,13 @@ impl SystemControl {
             Self::Recover => "RECOVER",
         };
 
-        // Return the slice that has the same nmber of characters as
+        buf[..parameter.len()].clone_from_slice(&parameter.as_bytes()[..parameter.len()]);
+
+        // Return the slice that has the same number of characters as
         // the parameter
-        &parameter.as_bytes()[..parameter.len()]
+        &buf[..parameter.len()]
+
+        //&parameter.as_bytes()[..parameter.len()]
     }
 }
 
@@ -521,8 +525,8 @@ pub enum Source {
     HDMI,
 }
 impl Source {
-    pub fn into_parameter_str(&self, buf: &mut [u8]) -> &[u8] {
-        let s = match self {
+    pub fn into_parameter_str<'a>(&self, buf: &'a mut [u8]) -> &'a [u8] {
+        let parameter = match self {
             Self::Net => "NET",
             Self::Usb => "USB",
             Self::UsbDac => "USBDAC",
@@ -536,7 +540,11 @@ impl Source {
         };
 
         // Returned slice the same length as the parameter string
-        &s.as_bytes()[..s.len()]
+        buf[..parameter.len()].clone_from_slice(&parameter.as_bytes()[..parameter.len()]);
+
+        // Return the slice that has the same number of characters as
+        // the parameter
+        &buf[..parameter.len()]
     }
 }
 impl FromStr for Source {
