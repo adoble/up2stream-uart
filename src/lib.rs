@@ -66,11 +66,10 @@ const COMMAND_WIF: &str = "WIF";
 
 const COMMAND_DELIMITER: u8 = b';';
 const COMMAND_PARAMETER_START: u8 = b':';
-//const TERMINATOR: char = '\n';
 
 pub struct Up2Stream<'a, UART: Read<u8> + Write<u8>> {
     uart: &'a mut UART,
-    //rx_buffer: &'r [u8; MAX_SIZE_RESPONSE],
+
     response: ArrayString<MAX_SIZE_RESPONSE>,
 }
 
@@ -362,8 +361,12 @@ where
         todo!();
     }
 
-    //TODO more commands for version 4 here https://docs.google.com/spreadsheets/d/1LT6nsaCmg2B6vV0M2iOusxZ-hIqgDeqB0SLPTtZokCo/edit#gid=1444188925
+    //    ******* TODO more commands for version 4 here https://docs.google.com/spreadsheets/d/1LT6nsaCmg2B6vV0M2iOusxZ-hIqgDeqB0SLPTtZokCo/edit#gid=1444188925
 
+    // Send a command with any specified parameters.
+    // Commands are send as bytes with the following syntax (BNF)
+    //
+    //    <COMMAND> = <COMMAND_NAME> ";" | <COMMAND_NAME> ":" <PARAMETER> ";"
     fn send_command(&mut self, command: &str, parameter: &[u8]) -> Result<(), Error> {
         for c in command.chars() {
             self.uart.write(c as u8).map_err(|_| Error::SendCommand)?;
@@ -382,22 +385,22 @@ where
             .write(COMMAND_DELIMITER as u8)
             .map_err(|_| Error::SendCommand)?;
 
-        // self.uart
-        //     .write(TERMINATOR as u8)
-        //     .map_err(|_| Error::SendCommand)?;
-
         self.uart.flush().map_err(|_| Error::SendCommand)?;
 
         Ok(())
     }
 
+    // Send a query and read the responce. Queries are send with the following syntax (BNF):
+    //   <QUERY> = <COMMAND> ";"
+    // The response has the following syntax:
+    // <RESPONSE> = <COMMAND> ":" <PARAMETER_LIST> ";"
+    // <PARAMETER_LIST> = <PARAMETER> "," <PARAMETER_LIST> | <PARAMETER>
+    //
     fn send_query(&mut self, command: &str) -> Result<ArrayString<MAX_SIZE_RESPONSE>, Error> {
-        //self.send_command(command, "")?;
-
         for c in command.chars() {
             self.uart.write(c as u8).map_err(|_| Error::SendCommand)?;
         }
-        //self.uart.write(b'\n').map_err(|_| Error::SendCommand)?;
+
         self.uart
             .write(COMMAND_DELIMITER)
             .map_err(|_| Error::SendCommand)?;
@@ -405,18 +408,6 @@ where
         self.uart.flush().map_err(|_| Error::SendCommand)?;
 
         let mut response = ArrayString::<MAX_SIZE_RESPONSE>::new();
-
-        //let c: char = ' ';
-        // let mut terminator: [u8; 1] = [0; 1];
-        // TERMINATOR.encode_utf8(&mut terminator);
-        // let mut read_byte;
-        // loop {
-        //     read_byte = self.uart.read().map_err(|_| Error::ReadingQueryReponse)?;
-        //     if read_byte == terminator[0] {
-        //         break;
-        //     }
-        //     response.push(read_byte as char);
-        // }
 
         let mut read_byte;
         loop {
