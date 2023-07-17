@@ -64,9 +64,9 @@ const COMMAND_NAM: &str = "NAM";
 const COMMAND_ETH: &str = "ETH";
 const COMMAND_WIF: &str = "WIF";
 
-const COMMAND_DELIMITER: char = ';';
-const COMMAND_PARAMETER_START: char = ':';
-const TERMINATOR: char = '\n';
+const COMMAND_DELIMITER: u8 = b';';
+const COMMAND_PARAMETER_START: u8 = b':';
+//const TERMINATOR: char = '\n';
 
 pub struct Up2Stream<'a, UART: Read<u8> + Write<u8>> {
     uart: &'a mut UART,
@@ -382,9 +382,9 @@ where
             .write(COMMAND_DELIMITER as u8)
             .map_err(|_| Error::SendCommand)?;
 
-        self.uart
-            .write(TERMINATOR as u8)
-            .map_err(|_| Error::SendCommand)?;
+        // self.uart
+        //     .write(TERMINATOR as u8)
+        //     .map_err(|_| Error::SendCommand)?;
 
         self.uart.flush().map_err(|_| Error::SendCommand)?;
 
@@ -397,19 +397,31 @@ where
         for c in command.chars() {
             self.uart.write(c as u8).map_err(|_| Error::SendCommand)?;
         }
-        self.uart.write(b'\n').map_err(|_| Error::SendCommand)?;
+        //self.uart.write(b'\n').map_err(|_| Error::SendCommand)?;
+        self.uart
+            .write(COMMAND_DELIMITER)
+            .map_err(|_| Error::SendCommand)?;
 
         self.uart.flush().map_err(|_| Error::SendCommand)?;
 
         let mut response = ArrayString::<MAX_SIZE_RESPONSE>::new();
 
         //let c: char = ' ';
-        let mut terminator: [u8; 1] = [0; 1];
-        TERMINATOR.encode_utf8(&mut terminator);
+        // let mut terminator: [u8; 1] = [0; 1];
+        // TERMINATOR.encode_utf8(&mut terminator);
+        // let mut read_byte;
+        // loop {
+        //     read_byte = self.uart.read().map_err(|_| Error::ReadingQueryReponse)?;
+        //     if read_byte == terminator[0] {
+        //         break;
+        //     }
+        //     response.push(read_byte as char);
+        // }
+
         let mut read_byte;
         loop {
             read_byte = self.uart.read().map_err(|_| Error::ReadingQueryReponse)?;
-            if read_byte == terminator[0] {
+            if read_byte == COMMAND_DELIMITER {
                 break;
             }
             response.push(read_byte as char);
