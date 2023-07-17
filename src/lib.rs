@@ -28,7 +28,10 @@ mod error;
 mod parameter_types;
 
 use crate::error::Error;
-use crate::parameter_types::{Bass, DeviceStatus, Source, Switch, SystemControl, Treble, Volume};
+use crate::parameter_types::{
+    AudioChannel, Bass, DeviceStatus, Led, LoopMode, MultiroomState, PlayPreset, Playback, Source,
+    Switch, SystemControl, Treble, Volume,
+};
 
 const MAX_SIZE_RESPONSE: usize = 1024;
 
@@ -257,82 +260,107 @@ where
     pub fn bass(&mut self) -> Result<Bass, Error> {
         todo!();
     }
-    /*
+    pub fn set_bass(&mut self, _bass: Bass) -> Result<(), Error> {
+        todo!();
+    }
+    pub fn treble(&mut self) -> Result<Treble, Error> {
+        todo!();
+    }
 
+    pub fn set_treble(&mut self, _treble: Treble) -> Result<(), Error> {
+        todo!();
+    }
 
+    pub fn play_pause_toggle(&self) -> Result<(), Error> {
+        todo!()
+    }
 
+    pub fn stop(&self) -> Result<(), Error> {
+        todo!()
+    }
+    pub fn next(&self) -> Result<(), Error> {
+        todo!()
+    }
 
-        pub fn set_bass(&self, bass: Bass) {}
+    pub fn previous(&self) -> Result<(), Error> {
+        todo!()
+    }
+    pub fn bluetooth_connected(&self) -> Result<bool, Error> {
+        todo!()
+    }
+    pub fn connect_bluetooth(&self) -> Result<(), Error> {
+        todo!()
+    }
+    pub fn disconnect_bluetooth(&self) -> Result<(), Error> {
+        todo!()
+    }
+    pub fn playback_status(&self) -> Result<Playback, Error> {
+        todo!()
+    }
+    pub fn audio_channel(&self) -> Result<AudioChannel, Error> {
+        todo!()
+    }
+    pub fn multiroom_state(&self) -> Result<MultiroomState, Error> {
+        todo!()
+    }
+    pub fn set_multiroom_state(&mut self, _state: MultiroomState) -> Result<(), Error> {
+        todo!();
+    }
+    pub fn led(&self) -> Result<Led, Error> {
+        todo!()
+    }
+    pub fn set_led(&mut self, _led_status: Led) -> Result<(), Error> {
+        todo!();
+    }
+    pub fn beep(&self) -> Result<bool, Error> {
+        todo!();
+    }
 
-        pub fn treble(&self) -> Treble {}
+    pub fn set_beep(&self, _beep: bool) -> Result<(), Error> {
+        todo!()
+    }
 
-        pub fn set_treble(&self, treble: Treble) {}
+    pub fn set_play_preset(&self, _preset: PlayPreset) -> Result<(), Error> {
+        todo!();
+    }
+    pub fn virtual_bass(&self) -> Result<bool, Error> {
+        todo!();
+    }
 
-        //TODO could not invalid states be implemented using the type state pattern?
-        pub fn play_pause_toggle(&self) -> Result<(), Error> {
+    pub fn enable_virtual_bass(&self) -> Result<(), Error> {
+        todo!();
+    }
 
+    pub fn disable_virtual_bass(&self) -> Result<(), Error> {
+        todo!();
+    }
 
-            use Source::*;
-            match self.input_source() {
-                Bluetooth | Net |Usb => Ok(()) , // TODO Send the command,
+    pub fn toggle_virtual_bass(&self) -> Result<(), Error> {
+        todo!();
+    }
+    pub fn reset_wifi(&self) -> Result<(), Error> {
+        todo!();
+    }
+    pub fn loop_mode(&self) -> Result<LoopMode, Error> {
+        todo!();
+    }
+    pub fn set_loop_mode(&self, _loop_mode: LoopMode) -> Result<(), Error> {
+        todo!();
+    }
+    pub fn device_name(&self) -> Result<&str, Error> {
+        todo!();
+    }
 
-                _ =>  Err(Error::NotSupportedForDeviceSource),
-            }
+    pub fn set_device_name(&self, _device_name: &str) -> Result<LoopMode, Error> {
+        todo!();
+    }
+    pub fn enternet_connection(&self) -> Result<bool, Error> {
+        todo!();
+    }
 
-        }
-
-        pub fn stop(&self) {}
-
-        pub fn next(&self) {}
-
-        pub fn previous(&self) {}
-
-        pub fn bluetooth_connected(&self) -> bool {}
-
-        pub fn connect_bluetooth(&self) -> Result<(), Error> {}
-
-        pub fn disconnect_bluetooth(&self) -> Result<(), Error> {}
-
-        pub fn playback_status(&self) -> Playback {}
-
-        pub fn audio_channel(&self) -> AudioChannel {}
-
-        pub fn multiroom_state(&self) -> MultiroomState {}
-
-        pub fn set_multiroom_state(&self, state: MultiroomState) {}
-
-        pub fn led(&self)  -> Led {}
-
-        pub fn set_led(&self, status: Led) {}
-
-        pub fn beep(&self) -> bool {}
-
-        pub fn set_beep(&self, beep: bool) {}
-
-        pub fn set_play_preset(&self, preset: PlayPreset) {}
-
-        pub fn virtual_bass(&self) -> bool {}
-
-        pub fn enable_virtual_bass(&self) {}
-
-        pub fn disable_virtual_bass(&self) {}
-
-        pub fn toggle_virtual_bass(&self) {}
-
-        pub fn reset_wifi(&self) {}
-
-        pub fn loop_mode(&self) -> LoopMode {}
-
-        pub fn set_loop_mode(&self, loop_mode: LoopMode) {}
-
-        pub fn device_name(&self) -> &str {}
-
-        pub fn set_device_name(&self, device_name: &str) {}
-
-        pub fn enternet_connection(&self) -> bool {}
-
-        pub fn wifi_connection(&self) -> bool {}
-    */
+    pub fn wifi_connection(&self) -> Result<bool, Error> {
+        todo!();
+    }
 
     //TODO more commands for version 4 here https://docs.google.com/spreadsheets/d/1LT6nsaCmg2B6vV0M2iOusxZ-hIqgDeqB0SLPTtZokCo/edit#gid=1444188925
 
