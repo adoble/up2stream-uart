@@ -200,6 +200,33 @@ impl FromStr for Switch {
     }
 }
 
+pub enum SystemControl {
+    Reboot,
+    Standby,
+    Reset,
+    Recover,
+}
+
+impl SystemControl {
+    //TODO use a standard trait?
+    pub fn into_parameter_str<'a>(&self, buf: &'a mut [u8]) -> &'a [u8] {
+        let parameter = match self {
+            Self::Reboot => "REBOOT",
+            Self::Standby => "STANDBY",
+            Self::Reset => "RESET",
+            Self::Recover => "RECOVER",
+        };
+
+        buf[..parameter.len()].clone_from_slice(&parameter.as_bytes()[..parameter.len()]);
+
+        // Return the slice that has the same number of characters as
+        // the parameter
+        &buf[..parameter.len()]
+
+        //&parameter.as_bytes()[..parameter.len()]
+    }
+}
+
 #[cfg(test)]
 mod test {
 
@@ -207,6 +234,7 @@ mod test {
 
     #[test]
     fn test_base_10_bytes() {
+        //TODO remove
         let mut buf: [u8; 3] = [0; 3];
         assert_eq!(base_10_bytes(34, &mut buf), b"34");
         assert_eq!(base_10_bytes(255, &mut buf), b"255");
@@ -535,5 +563,23 @@ mod test {
         assert_eq!(Switch::Off.into_parameter_str(&mut buf), b"0");
         assert_eq!(Switch::On.into_parameter_str(&mut buf), b"1");
         assert_eq!(Switch::Toggle.into_parameter_str(&mut buf), b"T");
+    }
+
+    #[test]
+    fn system_control_into_parameter_str() {
+        let mut buf: [u8; 7] = [0; 7];
+        assert_eq!(
+            SystemControl::Reboot.into_parameter_str(&mut buf),
+            b"REBOOT"
+        );
+        assert_eq!(
+            SystemControl::Standby.into_parameter_str(&mut buf),
+            b"STANDBY"
+        );
+        assert_eq!(SystemControl::Reset.into_parameter_str(&mut buf), b"RESET");
+        assert_eq!(
+            SystemControl::Recover.into_parameter_str(&mut buf),
+            b"RECOVER"
+        );
     }
 }

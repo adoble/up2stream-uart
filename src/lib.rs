@@ -28,7 +28,7 @@ mod error;
 mod parameter_types;
 
 use crate::error::Error;
-use crate::parameter_types::{Bass, Switch, Treble, Volume};
+use crate::parameter_types::{Bass, Switch, SystemControl, Treble, Volume};
 
 const MAX_SIZE_RESPONSE: usize = 1024;
 
@@ -418,97 +418,32 @@ pub struct DeviceStatus {
     upgrading: bool,
 }
 
-// #[derive(Debug, PartialEq)]
-// struct Treble(i8); //-10..10
-// impl Treble {
-//     fn new(treble: i8) -> Result<Self, Error> {
-//         let range = -10..10;
-//         if range.contains(&treble) {
-//             Ok(Self(treble))
-//         } else {
-//             Err(Error::OutOfRange)
-//         }
-//     }
+// pub enum SystemControl {
+//     Reboot,
+//     Standby,
+//     Reset,
+//     Recover,
 // }
 
-// impl FromStr for Treble {
-//     type Err = Error;
+// impl SystemControl {
+//     //TODO use a standard trait?
+//     pub fn into_parameter_str<'a>(&self, buf: &'a mut [u8]) -> &'a [u8] {
+//         let parameter = match self {
+//             Self::Reboot => "REBOOT",
+//             Self::Standby => "STANDBY",
+//             Self::Reset => "RESET",
+//             Self::Recover => "RECOVER",
+//         };
 
-//     fn from_str(s: &str) -> Result<Self, Self::Err> {
-//         let treble = s.parse::<i8>().map_err(|_| Error::InvalidString)?;
-//         Ok(Self(treble))
+//         buf[..parameter.len()].clone_from_slice(&parameter.as_bytes()[..parameter.len()]);
+
+//         // Return the slice that has the same number of characters as
+//         // the parameter
+//         &buf[..parameter.len()]
+
+//         //&parameter.as_bytes()[..parameter.len()]
 //     }
 // }
-
-// #[derive(Debug, PartialEq)]
-// struct Bass(i8); //-10..10
-// impl Bass {
-//     fn new(bass: i8) -> Result<Self, Error> {
-//         let range = -10..10;
-//         if range.contains(&bass) {
-//             Ok(Self(bass))
-//         } else {
-//             Err(Error::OutOfRange)
-//         }
-//     }
-// }
-
-// impl FromStr for Bass {
-//     type Err = Error;
-
-//     fn from_str(s: &str) -> Result<Self, Self::Err> {
-//         let bass = s.parse::<i8>().map_err(|_| Error::InvalidString)?;
-//         Ok(Self(bass))
-//     }
-// }
-
-// struct PlayPreset(u8); // 0..10
-// impl PlayPreset {
-//     fn new(preset: u8) -> Result<Self, Error> {
-//         let range = 0..10;
-//         if range.contains(&preset) {
-//             Ok(Self(preset))
-//         } else {
-//             Err(Error::OutOfRange)
-//         }
-//     }
-// }
-
-// impl FromStr for PlayPreset {
-//     type Err = Error;
-
-//     fn from_str(s: &str) -> Result<Self, Self::Err> {
-//         let preset = s.parse::<u8>().map_err(|_| Error::InvalidString)?;
-//         Ok(Self(preset))
-//     }
-// }
-
-pub enum SystemControl {
-    Reboot,
-    Standby,
-    Reset,
-    Recover,
-}
-
-impl SystemControl {
-    //TODO use a standard trait?
-    pub fn into_parameter_str<'a>(&self, buf: &'a mut [u8]) -> &'a [u8] {
-        let parameter = match self {
-            Self::Reboot => "REBOOT",
-            Self::Standby => "STANDBY",
-            Self::Reset => "RESET",
-            Self::Recover => "RECOVER",
-        };
-
-        buf[..parameter.len()].clone_from_slice(&parameter.as_bytes()[..parameter.len()]);
-
-        // Return the slice that has the same number of characters as
-        // the parameter
-        &buf[..parameter.len()]
-
-        //&parameter.as_bytes()[..parameter.len()]
-    }
-}
 
 // TODO move this to parameter_types
 #[derive(Debug, PartialEq)]
