@@ -283,6 +283,51 @@ impl FromStr for Source {
     }
 }
 
+#[derive(Debug, PartialEq)]
+pub struct DeviceStatus {
+    pub source: Source,
+    pub mute: bool,
+    pub volume: Volume,
+    pub treble: Treble,
+    pub bass: Bass,
+    pub net: bool,
+    pub internet: bool,
+    pub playing: bool,
+    pub led: bool,
+    pub upgrading: bool,
+}
+
+pub enum Playback {
+    Playing,
+    NotPlaying,
+}
+
+pub enum AudioChannel {
+    Left,
+    Right,
+    Silent, // ???
+}
+
+pub enum MultiroomState {
+    Slave,
+    Master,
+    None,
+}
+
+pub enum Led {
+    On,
+    Off,
+    Toogle,
+}
+
+pub enum LoopMode {
+    RepeatAll,
+    RepeatOne,
+    RepeatShuffle,
+    Shuffle,
+    Sequence,
+}
+
 #[cfg(test)]
 mod test {
 

@@ -28,7 +28,7 @@ mod error;
 mod parameter_types;
 
 use crate::error::Error;
-use crate::parameter_types::{Bass, Source, Switch, SystemControl, Treble, Volume};
+use crate::parameter_types::{Bass, DeviceStatus, Source, Switch, SystemControl, Treble, Volume};
 
 const MAX_SIZE_RESPONSE: usize = 1024;
 
@@ -389,64 +389,6 @@ where
 
         Ok(response)
     }
-}
-
-// #[derive(Debug)]
-// pub enum Error {
-//     NotSupportedForDeviceSource,
-//     ReadingQueryReponse,
-//     NonUTF8,
-//     SendCommand,
-//     SourceNotKnown,
-//     BooleanParse,
-//     OutOfRange,
-//     InvalidString,
-//     Unimplemented,
-// }
-
-#[derive(Debug, PartialEq)]
-pub struct DeviceStatus {
-    source: Source,
-    mute: bool,
-    volume: Volume,
-    treble: Treble,
-    bass: Bass,
-    net: bool,
-    internet: bool,
-    playing: bool,
-    led: bool,
-    upgrading: bool,
-}
-
-pub enum Playback {
-    Playing,
-    NotPlaying,
-}
-
-pub enum AudioChannel {
-    Left,
-    Right,
-    Silent, // ???
-}
-
-pub enum MultiroomState {
-    Slave,
-    Master,
-    None,
-}
-
-pub enum Led {
-    On,
-    Off,
-    Toogle,
-}
-
-pub enum LoopMode {
-    RepeatAll,
-    RepeatOne,
-    RepeatShuffle,
-    Shuffle,
-    Sequence,
 }
 
 #[cfg(test)]
