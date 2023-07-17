@@ -227,8 +227,66 @@ impl SystemControl {
     }
 }
 
+#[derive(Debug, PartialEq)]
+pub enum Source {
+    Net,
+    Usb,
+    UsbDac,
+    LineIn,
+    LineIn2,
+    Bluetooth,
+    Optical,
+    Coax,
+    I2S,
+    HDMI,
+}
+impl Source {
+    pub fn into_parameter_str<'a>(&self, buf: &'a mut [u8]) -> &'a [u8] {
+        let parameter = match self {
+            Self::Net => "NET",
+            Self::Usb => "USB",
+            Self::UsbDac => "USBDAC",
+            Self::LineIn => "LINE-IN",
+            Self::LineIn2 => "LINE-IN2",
+            Self::Bluetooth => "BT",
+            Self::Optical => "OPT",
+            Self::Coax => "COAX",
+            Self::I2S => "I2S",
+            Self::HDMI => "HDMI",
+        };
+
+        // Returned slice the same length as the parameter string
+        buf[..parameter.len()].clone_from_slice(&parameter.as_bytes()[..parameter.len()]);
+
+        // Return the slice that has the same number of characters as
+        // the parameter
+        &buf[..parameter.len()]
+    }
+}
+impl FromStr for Source {
+    type Err = Error;
+
+    fn from_str(source_str: &str) -> Result<Source, Error> {
+        match source_str {
+            "NET" => Ok(Source::Net),
+            "USB" => Ok(Source::Usb),
+            "USBDAC" => Ok(Source::UsbDac),
+            "LINE-IN" => Ok(Source::LineIn),
+            "LINE-IN2" => Ok(Source::LineIn2),
+            "BT" => Ok(Source::Bluetooth),
+            "OPT" => Ok(Source::Optical),
+            "COAX" => Ok(Source::Coax),
+            "I2S" => Ok(Source::I2S),
+            "HDMI" => Ok(Source::HDMI),
+            _ => Err(Error::SourceNotKnown), // "USB", "USBDAC", "LINE-IN", "LINE-IN2", "BT", "OPT", "COAX", "I2S", "HDMI",
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
+
+    use arrayvec::ArrayVec;
 
     use super::*;
 
@@ -581,5 +639,33 @@ mod test {
             SystemControl::Recover.into_parameter_str(&mut buf),
             b"RECOVER"
         );
+    }
+
+    #[test]
+    fn source_from_string() {
+        const NUMBER_SOURCES: usize = 10;
+        let source_strings: [&str; NUMBER_SOURCES] = [
+            "NET", "USB", "USBDAC", "LINE-IN", "LINE-IN2", "BT", "OPT", "COAX", "I2S", "HDMI",
+        ];
+        use Source::*;
+        let expected_sources = ArrayVec::from([
+            Net, Usb, UsbDac, LineIn, LineIn2, Bluetooth, Optical, Coax, I2S, HDMI,
+        ]);
+        let mut actual_sources = ArrayVec::<Source, NUMBER_SOURCES>::new();
+
+        // let mut source: Source;
+        // for (index, source_str)  in source_strings.iter().enumerate() {
+        //     let source = expected_sources
+        // }
+
+        for s in source_strings {
+            let source = Source::from_str(s).unwrap();
+            actual_sources.push(source);
+        }
+
+        assert_eq!(actual_sources, expected_sources);
+
+        let source: Result<Source, Error> = Source::from_str("UNKNOWN");
+        assert!(source.is_err());
     }
 }

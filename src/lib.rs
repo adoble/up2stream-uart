@@ -28,7 +28,7 @@ mod error;
 mod parameter_types;
 
 use crate::error::Error;
-use crate::parameter_types::{Bass, Switch, SystemControl, Treble, Volume};
+use crate::parameter_types::{Bass, Source, Switch, SystemControl, Treble, Volume};
 
 const MAX_SIZE_RESPONSE: usize = 1024;
 
@@ -416,90 +416,6 @@ pub struct DeviceStatus {
     playing: bool,
     led: bool,
     upgrading: bool,
-}
-
-// pub enum SystemControl {
-//     Reboot,
-//     Standby,
-//     Reset,
-//     Recover,
-// }
-
-// impl SystemControl {
-//     //TODO use a standard trait?
-//     pub fn into_parameter_str<'a>(&self, buf: &'a mut [u8]) -> &'a [u8] {
-//         let parameter = match self {
-//             Self::Reboot => "REBOOT",
-//             Self::Standby => "STANDBY",
-//             Self::Reset => "RESET",
-//             Self::Recover => "RECOVER",
-//         };
-
-//         buf[..parameter.len()].clone_from_slice(&parameter.as_bytes()[..parameter.len()]);
-
-//         // Return the slice that has the same number of characters as
-//         // the parameter
-//         &buf[..parameter.len()]
-
-//         //&parameter.as_bytes()[..parameter.len()]
-//     }
-// }
-
-// TODO move this to parameter_types
-#[derive(Debug, PartialEq)]
-pub enum Source {
-    Net,
-    Usb,
-    UsbDac,
-    LineIn,
-    LineIn2,
-    Bluetooth,
-    Optical,
-    Coax,
-    I2S,
-    HDMI,
-}
-impl Source {
-    pub fn into_parameter_str<'a>(&self, buf: &'a mut [u8]) -> &'a [u8] {
-        let parameter = match self {
-            Self::Net => "NET",
-            Self::Usb => "USB",
-            Self::UsbDac => "USBDAC",
-            Self::LineIn => "LINE-IN",
-            Self::LineIn2 => "LINE-IN2",
-            Self::Bluetooth => "BT",
-            Self::Optical => "OPT",
-            Self::Coax => "COAX",
-            Self::I2S => "I2S",
-            Self::HDMI => "HDMI",
-        };
-
-        // Returned slice the same length as the parameter string
-        buf[..parameter.len()].clone_from_slice(&parameter.as_bytes()[..parameter.len()]);
-
-        // Return the slice that has the same number of characters as
-        // the parameter
-        &buf[..parameter.len()]
-    }
-}
-impl FromStr for Source {
-    type Err = Error;
-
-    fn from_str(source_str: &str) -> Result<Source, Error> {
-        match source_str {
-            "NET" => Ok(Source::Net),
-            "USB" => Ok(Source::Usb),
-            "USBDAC" => Ok(Source::UsbDac),
-            "LINE-IN" => Ok(Source::LineIn),
-            "LINE-IN2" => Ok(Source::LineIn2),
-            "BT" => Ok(Source::Bluetooth),
-            "OPT" => Ok(Source::Optical),
-            "COAX" => Ok(Source::Coax),
-            "I2S" => Ok(Source::I2S),
-            "HDMI" => Ok(Source::HDMI),
-            _ => Err(Error::SourceNotKnown), // "USB", "USBDAC", "LINE-IN", "LINE-IN2", "BT", "OPT", "COAX", "I2S", "HDMI",
-        }
-    }
 }
 
 pub enum Playback {
