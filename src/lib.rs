@@ -126,7 +126,7 @@ where
     pub fn execute_system_control(&mut self, control: SystemControl) -> Result<(), Error> {
         let mut buf = [0; 64];
 
-        self.send_command(COMMAND_SYSTEM_CONTROL, control.into_parameter_str(&mut buf))?;
+        self.send_command(COMMAND_SYSTEM_CONTROL, control.as_parameter_str(&mut buf))?;
 
         Ok(())
     }
@@ -163,7 +163,7 @@ where
 
         let mut buf = [0; 1];
 
-        self.send_command(COMMAND_AUD, switch.into_parameter_str(&mut buf))
+        self.send_command(COMMAND_AUD, switch.as_parameter_str(&mut buf))
     }
 
     /// Get the current input source.
@@ -180,7 +180,7 @@ where
 
         // A response is in the form
         // SRC:{source string}
-        let parts: ArrayVec<&str, 2> = response.split(":").collect();
+        let parts: ArrayVec<&str, 2> = response.split(':').collect();
         let source = Source::from_str(parts[1])?;
         Ok(source)
     }
@@ -193,7 +193,7 @@ where
     /// ```
     pub fn select_input_source(&mut self, source: Source) -> Result<(), Error> {
         let mut buf = [0; 20];
-        self.send_command(COMMAND_SRC, source.into_parameter_str(&mut buf))
+        self.send_command(COMMAND_SRC, source.as_parameter_str(&mut buf))
     }
 
     /// Get the current volume, e.g:
@@ -206,7 +206,7 @@ where
         let response = self.send_query(COMMAND_VOL)?;
 
         // Response is in the form VOL:{vol}", so first extract the volume
-        let parts: ArrayVec<&str, 2> = response.split(":").collect();
+        let parts: ArrayVec<&str, 2> = response.split(':').collect();
 
         let volume = Volume::from_str(parts[1])?;
 
@@ -220,7 +220,7 @@ where
     /// ```
     pub fn set_volume(&mut self, volume: Volume) -> Result<(), Error> {
         let mut buf = [0; 3];
-        self.send_command(COMMAND_VOL, volume.into_parameter_str(&mut buf))
+        self.send_command(COMMAND_VOL, volume.as_parameter_str(&mut buf))
     }
 
     /// Get if the audio is muted or not. .
@@ -228,7 +228,7 @@ where
         let response = self.send_query(COMMAND_MUT)?;
 
         // Response is in the form MUT:{0/1}\n", so first extract the status
-        let parts: ArrayVec<&str, 2> = response.split(":").collect();
+        let parts: ArrayVec<&str, 2> = response.split(':').collect();
 
         let status = Switch::from_str(parts[1])?.to_bool()?;
 
@@ -247,7 +247,7 @@ where
     /// ```
     pub fn set_mute(&mut self, switch: Switch) -> Result<(), Error> {
         let mut buf = [0; 1];
-        self.send_command(COMMAND_MUT, switch.into_parameter_str(&mut buf))
+        self.send_command(COMMAND_MUT, switch.as_parameter_str(&mut buf))
     }
 
     /// Get the bass value, e.g.;

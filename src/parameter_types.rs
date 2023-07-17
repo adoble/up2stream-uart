@@ -34,7 +34,7 @@ impl Volume {
         self.0
     }
 
-    pub fn into_parameter_str<'a>(&self, buf: &'a mut [u8]) -> &'a [u8] {
+    pub fn as_parameter_str<'a>(&self, buf: &'a mut [u8]) -> &'a [u8] {
         let mut value = self.0;
         if value == 0 {
             //return b"0";
@@ -43,7 +43,7 @@ impl Volume {
         }
         let mut i = 0;
         while value > 0 {
-            buf[i] = (value % 10) as u8 + b'0';
+            buf[i] = (value % 10) + b'0';
             value /= 10;
             i += 1;
         }
@@ -104,8 +104,6 @@ impl Bass {
             Err(Error::OutOfRange)
         }
     }
-
-    // into_parameter_string - see https://doc.rust-lang.org/src/alloc/string.rs.html#2570
 }
 
 impl FromStr for Bass {
@@ -163,7 +161,7 @@ impl Switch {
         }
     }
 
-    pub fn into_parameter_str<'a>(&self, buf: &'a mut [u8]) -> &'a [u8] {
+    pub fn as_parameter_str<'a>(&self, buf: &'a mut [u8]) -> &'a [u8] {
         let s = match self {
             Self::Off => "0",
             Self::On => "1",
@@ -209,7 +207,7 @@ pub enum SystemControl {
 
 impl SystemControl {
     //TODO use a standard trait?
-    pub fn into_parameter_str<'a>(&self, buf: &'a mut [u8]) -> &'a [u8] {
+    pub fn as_parameter_str<'a>(&self, buf: &'a mut [u8]) -> &'a [u8] {
         let parameter = match self {
             Self::Reboot => "REBOOT",
             Self::Standby => "STANDBY",
@@ -238,10 +236,10 @@ pub enum Source {
     Optical,
     Coax,
     I2S,
-    HDMI,
+    Hdmi,
 }
 impl Source {
-    pub fn into_parameter_str<'a>(&self, buf: &'a mut [u8]) -> &'a [u8] {
+    pub fn as_parameter_str<'a>(&self, buf: &'a mut [u8]) -> &'a [u8] {
         let parameter = match self {
             Self::Net => "NET",
             Self::Usb => "USB",
@@ -252,7 +250,7 @@ impl Source {
             Self::Optical => "OPT",
             Self::Coax => "COAX",
             Self::I2S => "I2S",
-            Self::HDMI => "HDMI",
+            Self::Hdmi => "HDMI",
         };
 
         // Returned slice the same length as the parameter string
@@ -277,7 +275,7 @@ impl FromStr for Source {
             "OPT" => Ok(Source::Optical),
             "COAX" => Ok(Source::Coax),
             "I2S" => Ok(Source::I2S),
-            "HDMI" => Ok(Source::HDMI),
+            "HDMI" => Ok(Source::Hdmi),
             _ => Err(Error::SourceNotKnown), // "USB", "USBDAC", "LINE-IN", "LINE-IN2", "BT", "OPT", "COAX", "I2S", "HDMI",
         }
     }
@@ -404,45 +402,14 @@ mod test {
     #[test]
     fn volume_parameter_string() {
         let mut buf = [0; 3];
-        assert_eq!(
-            Volume::new(100).unwrap().into_parameter_str(&mut buf),
-            b"100"
-        );
-
-        // assert_eq!(
-        //     Volume::new(99).unwrap().into_parameter_str(),
-        //     ArrayString::from("99").unwrap()
-        // );
-
-        // assert_eq!(
-        //     Volume::new(75).unwrap().into_parameter_str(),
-        //     ArrayString::from("75").unwrap()
-        // );
-
-        // assert_eq!(
-        //     Volume::new(23).unwrap().into_parameter_str(),
-        //     ArrayString::from("23").unwrap()
-        // );
-
-        // assert_eq!(
-        //     Volume::new(10).unwrap().into_parameter_str(),
-        //     ArrayString::from("10").unwrap()
-        // );
-
-        // assert_eq!(
-        //     Volume::new(7).unwrap().into_parameter_str(),
-        //     ArrayString::from("7").unwrap()
-        // );
-
-        // assert_eq!(
-        //     Volume::new(1).unwrap().into_parameter_str(),
-        //     ArrayString::from("1").unwrap()
-        // );
-
-        // assert_eq!(
-        //     Volume::new(0).unwrap().into_parameter_str(),
-        //     ArrayString::from("0").unwrap()
-        // );
+        assert_eq!(Volume::new(100).unwrap().as_parameter_str(&mut buf), b"100");
+        assert_eq!(Volume::new(99).unwrap().as_parameter_str(&mut buf), b"99");
+        assert_eq!(Volume::new(75).unwrap().as_parameter_str(&mut buf), b"75");
+        assert_eq!(Volume::new(23).unwrap().as_parameter_str(&mut buf), b"23");
+        assert_eq!(Volume::new(10).unwrap().as_parameter_str(&mut buf), b"10");
+        assert_eq!(Volume::new(7).unwrap().as_parameter_str(&mut buf), b"7");
+        assert_eq!(Volume::new(1).unwrap().as_parameter_str(&mut buf), b"1");
+        assert_eq!(Volume::new(0).unwrap().as_parameter_str(&mut buf), b"0");
     }
 
     #[test]
@@ -453,7 +420,7 @@ mod test {
 
         let mut buf = [0; 3];
         for n in test_input.iter().enumerate() {
-            let vol = Volume::new(*n.1).unwrap().into_parameter_str(&mut buf);
+            let vol = Volume::new(*n.1).unwrap().as_parameter_str(&mut buf);
             //assert_eq!(vol, ArrayString::from(expected[n.0]).unwrap());
             assert_eq!(vol, expected[n.0].as_bytes());
         }
@@ -663,25 +630,22 @@ mod test {
     fn switch_to_string() {
         let mut buf = [0; 1];
 
-        assert_eq!(Switch::Off.into_parameter_str(&mut buf), b"0");
-        assert_eq!(Switch::On.into_parameter_str(&mut buf), b"1");
-        assert_eq!(Switch::Toggle.into_parameter_str(&mut buf), b"T");
+        assert_eq!(Switch::Off.as_parameter_str(&mut buf), b"0");
+        assert_eq!(Switch::On.as_parameter_str(&mut buf), b"1");
+        assert_eq!(Switch::Toggle.as_parameter_str(&mut buf), b"T");
     }
 
     #[test]
-    fn system_control_into_parameter_str() {
+    fn system_control_as_parameter_str() {
         let mut buf: [u8; 7] = [0; 7];
+        assert_eq!(SystemControl::Reboot.as_parameter_str(&mut buf), b"REBOOT");
         assert_eq!(
-            SystemControl::Reboot.into_parameter_str(&mut buf),
-            b"REBOOT"
-        );
-        assert_eq!(
-            SystemControl::Standby.into_parameter_str(&mut buf),
+            SystemControl::Standby.as_parameter_str(&mut buf),
             b"STANDBY"
         );
-        assert_eq!(SystemControl::Reset.into_parameter_str(&mut buf), b"RESET");
+        assert_eq!(SystemControl::Reset.as_parameter_str(&mut buf), b"RESET");
         assert_eq!(
-            SystemControl::Recover.into_parameter_str(&mut buf),
+            SystemControl::Recover.as_parameter_str(&mut buf),
             b"RECOVER"
         );
     }
@@ -694,7 +658,7 @@ mod test {
         ];
         use Source::*;
         let expected_sources = ArrayVec::from([
-            Net, Usb, UsbDac, LineIn, LineIn2, Bluetooth, Optical, Coax, I2S, HDMI,
+            Net, Usb, UsbDac, LineIn, LineIn2, Bluetooth, Optical, Coax, I2S, Hdmi,
         ]);
         let mut actual_sources = ArrayVec::<Source, NUMBER_SOURCES>::new();
 
