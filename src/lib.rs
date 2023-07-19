@@ -374,7 +374,7 @@ where
 
         if !parameter.is_empty() {
             self.uart
-                .write(COMMAND_PARAMETER_START as u8)
+                .write(COMMAND_PARAMETER_START)
                 .map_err(|_| Error::SendCommand)?;
             for c in parameter {
                 self.uart.write(*c).map_err(|_| Error::SendCommand)?;
@@ -382,7 +382,7 @@ where
         }
 
         self.uart
-            .write(COMMAND_DELIMITER as u8)
+            .write(COMMAND_DELIMITER)
             .map_err(|_| Error::SendCommand)?;
 
         self.uart.flush().map_err(|_| Error::SendCommand)?;
