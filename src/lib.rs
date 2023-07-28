@@ -17,6 +17,8 @@
 // Baud is 115200,8,N,1, no flow control.
 // Source https://forum.arylic.com/t/latest-api-documents-and-uart-protocols/534/5
 
+use nb::block;
+
 use core::str::FromStr;
 
 use embedded_hal::serial::{Read, Write};
@@ -405,18 +407,29 @@ where
             .write(COMMAND_DELIMITER)
             .map_err(|_| Error::SendCommand)?;
 
-        self.uart.flush().map_err(|_| Error::SendCommand)?;
+        //defmt::info!("Flushing");
+        //self.uart.flush().map_err(|_| Error::SendCommand)?;
 
         let mut response = ArrayString::<MAX_SIZE_RESPONSE>::new();
-
-        let mut read_byte;
+        defmt::info!("Reading chars");
         loop {
-            read_byte = self.uart.read().map_err(|_| Error::ReadingQueryReponse)?;
-            if read_byte == COMMAND_DELIMITER {
+            let read_byte = block!(self.uart.read()).map_err(|_| Error::ReadingQueryReponse)?;
+            defmt::debug!("Char read: {}", read_byte);
+            if read_byte != COMMAND_DELIMITER {
+                response.push(read_byte as char);
+                continue;
+            } else {
                 break;
             }
-            response.push(read_byte as char);
         }
+
+        // loop {
+        //     read_byte = self.uart.read().map_err(|_| Error::ReadingQueryReponse)?;
+        //     if read_byte == COMMAND_DELIMITER {
+        //         break;
+        //     }
+        //     response.push(read_byte as char);
+        // }
 
         Ok(response)
     }
