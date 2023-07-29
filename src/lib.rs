@@ -407,14 +407,11 @@ where
             .write(COMMAND_DELIMITER)
             .map_err(|_| Error::SendCommand)?;
 
-        //defmt::info!("Flushing");
-        //self.uart.flush().map_err(|_| Error::SendCommand)?;
-
         let mut response = ArrayString::<MAX_SIZE_RESPONSE>::new();
-        defmt::info!("Reading chars");
+
         loop {
             let read_byte = block!(self.uart.read()).map_err(|_| Error::ReadingQueryReponse)?;
-            defmt::debug!("Char read: {}", read_byte);
+
             if read_byte != COMMAND_DELIMITER {
                 response.push(read_byte as char);
                 continue;
