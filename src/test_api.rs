@@ -29,7 +29,6 @@ fn send_command() {
 fn send_query() {
     let expectations = [
         SerialTransaction::write_many(b"CMD;"),
-        SerialTransaction::flush(),
         SerialTransaction::read_many(b"CMD:on;"),
     ];
 
@@ -48,7 +47,6 @@ fn send_query() {
 fn firmware_version_test() {
     let expectations = [
         SerialTransaction::write_many(b"VER;"),
-        SerialTransaction::flush(),
         SerialTransaction::read_many(b"VER:1234-13-42;"),
     ];
 
@@ -67,7 +65,6 @@ fn firmware_version_test() {
 fn device_status() -> Result<(), Error> {
     let expectations = [
         SerialTransaction::write_many(b"STA;"),
-        SerialTransaction::flush(),
         SerialTransaction::read_many(b"STA:BT,0,50,-4,4,1,1,1,0,0;"),
     ];
 
@@ -137,7 +134,6 @@ fn execute_system_control() {
 fn internet_connection() {
     let expectations = [
         SerialTransaction::write_many(b"WWW;"),
-        SerialTransaction::flush(),
         SerialTransaction::read_many(b"WWW:1;"),
     ];
 
@@ -158,7 +154,6 @@ fn internet_connection() {
 fn internet_connection_err() {
     let expectations = [
         SerialTransaction::write_many(b"WWW;"),
-        SerialTransaction::flush(),
         SerialTransaction::read_many(b"WWWW:1;"), // Incorrect data
     ];
 
@@ -177,7 +172,6 @@ fn internet_connection_err() {
 fn audio_out() {
     let expectations = [
         SerialTransaction::write_many(b"AUD;"),
-        SerialTransaction::flush(),
         SerialTransaction::read_many(b"AUD:1;"),
     ];
 
@@ -198,7 +192,6 @@ fn audio_out() {
 fn audio_out_err() {
     let expectations = [
         SerialTransaction::write_many(b"AUD;"),
-        SerialTransaction::flush(),
         SerialTransaction::read_many(b"AUD:T;"),
     ];
 
@@ -234,7 +227,6 @@ fn set_audio_out() {
 fn input_source() {
     let expectations = [
         SerialTransaction::write_many(b"SRC;"),
-        SerialTransaction::flush(),
         SerialTransaction::read_many(b"SRC:BT;"),
     ];
 
@@ -275,7 +267,6 @@ fn select_input_source() {
 fn volume() {
     let expectations = [
         SerialTransaction::write_many(b"VOL;"),
-        SerialTransaction::flush(),
         SerialTransaction::read_many(b"VOL:50;"),
     ];
 
@@ -314,7 +305,6 @@ fn set_volume() {
 fn mute_status() {
     let expectations = [
         SerialTransaction::write_many(b"MUT;"),
-        SerialTransaction::flush(),
         SerialTransaction::read_many(b"MUT:0;"),
     ];
 
