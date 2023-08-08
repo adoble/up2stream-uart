@@ -92,8 +92,9 @@ where
     /// {firmware}-{commit}-{api}
     pub fn firmware_version(&mut self) -> Result<&str, Error> {
         self.response = self
-            .send_query(COMMAND_VER)
-            .map_err(|_| Error::SendCommand)?;
+            //.send_query(COMMAND_VER)
+            //.map_err(|_| Error::SendCommand)?;
+            .send_query(COMMAND_VER)?;
 
         let s = self.response.as_str();
 
@@ -368,10 +369,17 @@ where
     //
     //    <COMMAND> = <COMMAND_NAME> ";" | <COMMAND_NAME> ":" <PARAMETER> ";"
     fn send_command(&mut self, command: &str, parameter: &[u8]) -> Result<(), Error> {
+        // First write a terminator character. This resets the channel.
+        self.uart
+            .write(COMMAND_DELIMITER)
+            .map_err(|_| Error::SendCommand)?;
+
+        // Now send the command characters
         for c in command.chars() {
             self.uart.write(c as u8).map_err(|_| Error::SendCommand)?;
         }
 
+        // Send parameters if availble
         if !parameter.is_empty() {
             self.uart
                 .write(COMMAND_PARAMETER_START)
@@ -381,6 +389,7 @@ where
             }
         }
 
+        // Send termination character
         self.uart
             .write(COMMAND_DELIMITER)
             .map_err(|_| Error::SendCommand)?;
@@ -397,6 +406,12 @@ where
     // <PARAMETER_LIST> = <PARAMETER> "," <PARAMETER_LIST> | <PARAMETER>
     //
     fn send_query(&mut self, command: &str) -> Result<ArrayString<MAX_SIZE_RESPONSE>, Error> {
+        // First write a terminator character. This resets the channel.
+        self.uart
+            .write(COMMAND_DELIMITER)
+            .map_err(|_| Error::SendCommand)?;
+
+        // Now send the command characters
         for c in command.chars() {
             self.uart.write(c as u8).map_err(|_| Error::SendCommand)?;
         }
@@ -405,17 +420,35 @@ where
             .write(COMMAND_DELIMITER)
             .map_err(|_| Error::SendCommand)?;
 
-        self.uart.flush().map_err(|_| Error::SendCommand)?;
+        // self.uart.flush().map_err(|_| Error::SendCommand2(4))?;
 
         let mut response = ArrayString::<MAX_SIZE_RESPONSE>::new();
 
-        let mut read_byte;
         loop {
-            read_byte = self.uart.read().map_err(|_| Error::ReadingQueryReponse)?;
-            if read_byte == COMMAND_DELIMITER {
+            // Blocking read of each character
+            let mut number_read_trys = 0;
+            let read_byte = loop {
+                match self.uart.read() {
+                    Ok(character) => break Ok(character),
+                    Err(nb::Error::WouldBlock) => {
+                        number_read_trys += 1;
+                        if number_read_trys > 10 {
+                            break Err(Error::Timeout);
+                        } else {
+                            continue;
+                        }
+                    }
+                    Err(nb::Error::Other(_e)) => break Err(Error::Read),
+                }
+            }?;
+            //.map_err(|_| Error::ReadingQueryReponse)?;
+
+            if read_byte != COMMAND_DELIMITER {
+                response.push(read_byte as char);
+                continue;
+            } else {
                 break;
             }
-            response.push(read_byte as char);
         }
 
         Ok(response)
