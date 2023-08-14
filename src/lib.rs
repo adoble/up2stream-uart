@@ -413,6 +413,7 @@ where
 
         // Now send the command characters
         for c in command.chars() {
+            //defmt::debug!("Sent: {}", c);
             self.uart.write(c as u8).map_err(|_| Error::SendCommand)?;
         }
 
@@ -420,7 +421,7 @@ where
             .write(COMMAND_DELIMITER)
             .map_err(|_| Error::SendCommand)?;
 
-        // self.uart.flush().map_err(|_| Error::SendCommand2(4))?;
+        //self.uart.flush().map_err(|_| Error::SendCommand)?;
 
         let mut response = ArrayString::<MAX_SIZE_RESPONSE>::new();
 
@@ -429,10 +430,13 @@ where
             let mut number_read_trys = 0;
             let read_byte = loop {
                 match self.uart.read() {
-                    Ok(character) => break Ok(character),
+                    Ok(character) => {
+                        break Ok(character);
+                    }
                     Err(nb::Error::WouldBlock) => {
                         number_read_trys += 1;
-                        if number_read_trys > 10 {
+                        //defmt::debug!("Number tries: {}", number_read_trys);
+                        if number_read_trys >= 10 {
                             break Err(Error::Timeout);
                         } else {
                             continue;
