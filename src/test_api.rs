@@ -10,6 +10,7 @@ use super::*;
 fn send_command() {
     let msg = "CMD:on;".as_bytes();
     let expectations = [
+        SerialTransaction::write(b';'),
         SerialTransaction::write_many(msg),
         SerialTransaction::flush(),
     ];
@@ -28,6 +29,7 @@ fn send_command() {
 #[test]
 fn send_query() {
     let expectations = [
+        SerialTransaction::write(b';'),
         SerialTransaction::write_many(b"CMD;"),
         SerialTransaction::read_many(b"CMD:on;"),
     ];
@@ -44,8 +46,9 @@ fn send_query() {
 }
 
 #[test]
-fn firmware_version_test() {
+fn firmware_version() {
     let expectations = [
+        SerialTransaction::write(b';'),
         SerialTransaction::write_many(b"VER;"),
         SerialTransaction::read_many(b"VER:1234-13-42;"),
     ];
@@ -64,6 +67,7 @@ fn firmware_version_test() {
 #[test]
 fn device_status() -> Result<(), Error> {
     let expectations = [
+        SerialTransaction::write(b';'),
         SerialTransaction::write_many(b"STA;"),
         SerialTransaction::read_many(b"STA:BT,0,50,-4,4,1,1,1,0,0;"),
     ];
@@ -115,6 +119,7 @@ fn system_control() {
 #[test]
 fn execute_system_control() {
     let expectations = [
+        SerialTransaction::write(b';'),
         SerialTransaction::write_many(b"SYS:RESET;"),
         SerialTransaction::flush(),
     ];
@@ -133,6 +138,7 @@ fn execute_system_control() {
 #[test]
 fn internet_connection() {
     let expectations = [
+        SerialTransaction::write(b';'),
         SerialTransaction::write_many(b"WWW;"),
         SerialTransaction::read_many(b"WWW:1;"),
     ];
@@ -153,6 +159,7 @@ fn internet_connection() {
 #[test]
 fn internet_connection_err() {
     let expectations = [
+        SerialTransaction::write(b';'),
         SerialTransaction::write_many(b"WWW;"),
         SerialTransaction::read_many(b"WWWW:1;"), // Incorrect data
     ];
@@ -171,6 +178,7 @@ fn internet_connection_err() {
 #[test]
 fn audio_out() {
     let expectations = [
+        SerialTransaction::write(b';'),
         SerialTransaction::write_many(b"AUD;"),
         SerialTransaction::read_many(b"AUD:1;"),
     ];
@@ -191,6 +199,7 @@ fn audio_out() {
 #[test]
 fn audio_out_err() {
     let expectations = [
+        SerialTransaction::write(b';'),
         SerialTransaction::write_many(b"AUD;"),
         SerialTransaction::read_many(b"AUD:T;"),
     ];
@@ -208,6 +217,7 @@ fn audio_out_err() {
 #[test]
 fn set_audio_out() {
     let expectations = [
+        SerialTransaction::write(b';'),
         SerialTransaction::write_many(b"AUD:1;"),
         SerialTransaction::flush(),
     ];
@@ -226,6 +236,7 @@ fn set_audio_out() {
 #[test]
 fn input_source() {
     let expectations = [
+        SerialTransaction::write(b';'),
         SerialTransaction::write_many(b"SRC;"),
         SerialTransaction::read_many(b"SRC:BT;"),
     ];
@@ -248,6 +259,7 @@ fn input_source() {
 #[test]
 fn select_input_source() {
     let expectations = [
+        SerialTransaction::write(b';'),
         SerialTransaction::write_many(b"SRC:COAX;"),
         SerialTransaction::flush(),
     ];
@@ -266,6 +278,7 @@ fn select_input_source() {
 #[test]
 fn volume() {
     let expectations = [
+        SerialTransaction::write(b';'),
         SerialTransaction::write_many(b"VOL;"),
         SerialTransaction::read_many(b"VOL:50;"),
     ];
@@ -286,6 +299,7 @@ fn volume() {
 #[test]
 fn set_volume() {
     let expectations = [
+        SerialTransaction::write(b';'),
         SerialTransaction::write_many(b"VOL:34;"),
         SerialTransaction::flush(),
     ];
@@ -304,6 +318,7 @@ fn set_volume() {
 #[test]
 fn mute_status() {
     let expectations = [
+        SerialTransaction::write(b';'),
         SerialTransaction::write_many(b"MUT;"),
         SerialTransaction::read_many(b"MUT:0;"),
     ];
@@ -322,6 +337,7 @@ fn mute_status() {
 #[test]
 fn set_mute() {
     let expectations = [
+        SerialTransaction::write(b';'),
         SerialTransaction::write_many(b"MUT:1;"),
         SerialTransaction::flush(),
     ];
@@ -340,6 +356,7 @@ fn set_mute() {
 #[test]
 fn toogle_mute() {
     let expectations = [
+        SerialTransaction::write(b';'),
         SerialTransaction::write_many(b"MUT:T;"),
         SerialTransaction::flush(),
     ];
