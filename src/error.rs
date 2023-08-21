@@ -6,7 +6,8 @@ use defmt::Format;
 #[cfg_attr(not(test), derive(defmt::Format))] // Only used when running on target hardware
 pub enum Error {
     NotSupportedForDeviceSource,
-    ReadingQueryReponse,
+    ReadingQueryResponse,
+    ParseResponseError,
     NonUTF8,
     SendCommand,
     SourceNotKnown,

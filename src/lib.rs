@@ -66,8 +66,9 @@ const COMMAND_NAM: &str = "NAM";
 const COMMAND_ETH: &str = "ETH";
 const COMMAND_WIF: &str = "WIF";
 
-const COMMAND_DELIMITER: u8 = b';';
-const COMMAND_PARAMETER_START: u8 = b':';
+const TERMINATOR: u8 = b';';
+const PARAMETER_START: u8 = b':';
+const PARAMETER_DELIMITER: u8 = b',';
 
 pub struct Up2Stream<'a, UART: Read<u8> + Write<u8>> {
     uart: &'a mut UART,
@@ -373,7 +374,7 @@ where
     fn send_command(&mut self, command: &str, parameter: &[u8]) -> Result<(), Error> {
         // First write a terminator character. This resets the channel.
         self.uart
-            .write(COMMAND_DELIMITER)
+            .write(TERMINATOR)
             .map_err(|_| Error::SendCommand)?;
 
         // Now send the command characters
@@ -384,7 +385,7 @@ where
         // Send parameters if availble
         if !parameter.is_empty() {
             self.uart
-                .write(COMMAND_PARAMETER_START)
+                .write(PARAMETER_START)
                 .map_err(|_| Error::SendCommand)?;
             for c in parameter {
                 self.uart.write(*c).map_err(|_| Error::SendCommand)?;
@@ -393,7 +394,7 @@ where
 
         // Send termination character
         self.uart
-            .write(COMMAND_DELIMITER)
+            .write(TERMINATOR)
             .map_err(|_| Error::SendCommand)?;
 
         self.uart.flush().map_err(|_| Error::SendCommand)?;
@@ -401,71 +402,162 @@ where
         Ok(())
     }
 
-    // Send a query and read the responce. Queries are send with the following syntax (BNF):
-    //   <QUERY> = <COMMAND> ";"
+    // Send a query and read the response. Queries are sent with the following syntax (BNF):
+    //   <query> ::= <command> <terminator>
+    //   <command> ::= <alphanumeric> | <command>
+    //   <terminator> ::= ";"
+    //
     // The response has the following syntax:
-    // <RESPONSE> = <COMMAND> ":" <PARAMETER_LIST> ";"
-    // <PARAMETER_LIST> = <PARAMETER> "," <PARAMETER_LIST> | <PARAMETER>
+    //  <response> ::= <command> <parameter_start> <parameter_list> <terminator>
+    //  <parameter_list> ::= <parameter> <parameter_delimiter> <parameter_list> | <parameter>
+    //  <parameter_start> = ":"
+    //  <parameter_delimiter> ::= ","
+    //
+    // In reality, a response  can be other characters due to framing issues, start up messages etc. so the "real"
+    // response grammmer looks like:
+    //  <response> ::= <noise> <command> <parameter_start> <parameter_list> <terminator> <noise> <EOR>
+    //  <parameter_list> ::= <parameter> <parameter_delimiter> <parameter_list> | <parameter>
+    //  <noise >::= <control_character> | <character> | <noise>
+    //  <control_char> ::=   "\n" | "\r"
+    //  <character> is any printable character
+    //  <EOR> is the end of record as indicated with a blocking read.
     //
     fn send_query(&mut self, command: &str) -> Result<ArrayString<MAX_SIZE_RESPONSE>, Error> {
+        const MAX_NUMBER_RESENDS: u8 = 3;
+
+        let mut query_response = ArrayString::<MAX_SIZE_RESPONSE>::new();
+
         // First write a terminator character. This resets the channel.
+        // TODO do we still need to do this?
         self.uart
-            .write(COMMAND_DELIMITER)
+            .write(TERMINATOR)
             .map_err(|_| Error::SendCommand)?;
 
-        // Now send the command characters
-        for c in command.chars() {
-            //defmt::debug!("Sent: {}", c);
-            self.uart.write(c as u8).map_err(|_| Error::SendCommand)?;
-        }
-
-        self.uart
-            .write(COMMAND_DELIMITER)
-            .map_err(|_| Error::SendCommand)?;
-
-        //self.uart.flush().map_err(|_| Error::SendCommand)?;
-
-        let mut response = ArrayString::<MAX_SIZE_RESPONSE>::new();
+        let mut number_resends: u8 = 0;
+        let mut resend_command = false;
 
         loop {
-            // Blocking read of each character
-            let mut number_read_trys = 0;
-            let read_byte = loop {
-                match self.uart.read() {
-                    Ok(character) => {
-                        break Ok(character);
-                    }
-                    Err(nb::Error::WouldBlock) => {
-                        number_read_trys += 1;
-                        //defmt::debug!("Number tries: {}", number_read_trys);
-                        if number_read_trys >= 10 {
-                            break Err(Error::Timeout);
-                        } else {
-                            continue;
-                        }
-                    }
-                    Err(nb::Error::Other(_e)) => break Err(Error::Read),
-                }
-            }?;
-            //.map_err(|_| Error::ReadingQueryReponse)?;
+            defmt::info!("OUTER LOOP");
+            // Send (or resend) the command characters
+            for c in command.chars() {
+                //defmt::debug!("Sent: {}", c);
+                self.uart.write(c as u8).map_err(|_| Error::SendCommand)?;
+            }
 
-            if read_byte != COMMAND_DELIMITER {
-                response.push(read_byte as char);
-                continue;
+            self.uart
+                .write(TERMINATOR)
+                .map_err(|_| Error::SendCommand)?;
+
+            defmt::info!("Sent command");
+
+            //self.uart.flush().map_err(|_| Error::SendCommand)?;
+
+            #[cfg_attr(not(test), derive(defmt::Format))] // Only used when running on target hardware
+            enum TokenType {
+                Character(u8),
+                EOR,
+                ControlCharacter,
+                Terminator,
+                ParameterStart,
+                ParameterDelimiter,
+            }
+
+            #[cfg_attr(not(test), derive(defmt::Format))] // Only used when running on target hardware
+            enum ParseState {
+                Command,
+                ValidatedCommand,
+                Parameter,
+                ValidatedParameter,
+            }
+
+            let mut state = ParseState::Command;
+            let mut command_string_index = 0;
+
+            // Read and parse the response
+            loop {
+                defmt::info!("INNER LOOP");
+                let token = match self.uart.read() {
+                    Ok(c) if c.is_ascii_alphanumeric() => Ok(TokenType::Character(c)),
+                    Ok(c) if c.is_ascii_control() => Ok(TokenType::ControlCharacter),
+                    Ok(c) if c == TERMINATOR => Ok(TokenType::Terminator),
+                    Ok(c) if c == PARAMETER_START => Ok(TokenType::ParameterStart),
+                    Ok(c) if c == PARAMETER_DELIMITER => Ok(TokenType::ParameterDelimiter),
+                    // Other characters should not occur
+                    Ok(_) => Err(Error::Read),
+                    // Assuming that Err(WouldBlock) is an end of record.
+                    Err(nb::Error::WouldBlock) => Ok(TokenType::EOR),
+                    // Read error condition
+                    Err(nb::Error::Other(_e)) => Err(Error::Read),
+                }?;
+
+                defmt::debug!("token: {:?}", token);
+
+                defmt::debug!("state: {:?}", state);
+
+                defmt::debug!("resend_command: {:?}", resend_command);
+
+                match state {
+                    ParseState::Command => match token {
+                        TokenType::Character(c)
+                            if c == command.as_bytes()[command_string_index] =>
+                        {
+                            command_string_index += 1;
+                            if command_string_index != command.len() {
+                                state = ParseState::Command;
+                            } else {
+                                state = ParseState::ValidatedCommand;
+                            };
+                        }
+                        TokenType::EOR => {
+                            resend_command = true;
+                            break;
+                        }
+                        _ => {
+                            command_string_index = 0;
+                            state = ParseState::Command;
+                        }
+                    },
+                    ParseState::ValidatedCommand => match token {
+                        TokenType::ParameterStart => state = ParseState::Parameter,
+                        TokenType::EOR => {
+                            resend_command = true;
+                            break;
+                        } // Retry
+                        _ => return Err(Error::ParseResponseError),
+                    },
+                    ParseState::Parameter => match token {
+                        TokenType::Character(c) => query_response.push(c as char),
+                        // Currently not seperating parameters and just treating them all as a string.
+                        TokenType::ParameterDelimiter => {
+                            query_response.push(PARAMETER_DELIMITER as char)
+                        }
+                        TokenType::Terminator => state = ParseState::ValidatedParameter,
+                        TokenType::EOR => {
+                            resend_command = true;
+                            break;
+                        } // Retry
+                        _ => return Err(Error::ParseResponseError),
+                    },
+                    ParseState::ValidatedParameter => match token {
+                        TokenType::EOR => break, // Stop reading
+                        _ => continue,           // Mop up any noise at the end
+                    },
+                }
+            }
+            defmt::debug!("Resend: {}", resend_command);
+            if resend_command {
+                if number_resends < MAX_NUMBER_RESENDS {
+                    number_resends += 1;
+                    continue;
+                } else {
+                    return Err(Error::Timeout);
+                }
             } else {
                 break;
             }
         }
 
-        // loop {
-        //     read_byte = self.uart.read().map_err(|_| Error::ReadingQueryReponse)?;
-        //     if read_byte == COMMAND_DELIMITER {
-        //         break;
-        //     }
-        //     response.push(read_byte as char);
-        // }
-
-        Ok(response)
+        Ok(query_response)
     }
 }
 
