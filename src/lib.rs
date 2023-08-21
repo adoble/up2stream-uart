@@ -429,26 +429,22 @@ where
 
         // First write a terminator character. This resets the channel.
         // TODO do we still need to do this?
-        self.uart
-            .write(TERMINATOR)
-            .map_err(|_| Error::SendCommand)?;
+        // self.uart
+        //     .write(TERMINATOR)
+        //     .map_err(|_| Error::SendCommand)?;
 
         let mut number_resends: u8 = 0;
         let mut resend_command = false;
 
         loop {
-            defmt::info!("OUTER LOOP");
             // Send (or resend) the command characters
             for c in command.chars() {
-                //defmt::debug!("Sent: {}", c);
                 self.uart.write(c as u8).map_err(|_| Error::SendCommand)?;
             }
 
             self.uart
                 .write(TERMINATOR)
                 .map_err(|_| Error::SendCommand)?;
-
-            defmt::info!("Sent command");
 
             //self.uart.flush().map_err(|_| Error::SendCommand)?;
 
@@ -463,6 +459,7 @@ where
             }
 
             #[cfg_attr(not(test), derive(defmt::Format))] // Only used when running on target hardware
+            #[derive(Clone, Copy)]
             enum ParseState {
                 Command,
                 ValidatedCommand,
@@ -475,7 +472,6 @@ where
 
             // Read and parse the response
             loop {
-                defmt::info!("INNER LOOP");
                 let token = match self.uart.read() {
                     Ok(c) if c.is_ascii_alphanumeric() => Ok(TokenType::Character(c)),
                     Ok(c) if c.is_ascii_control() => Ok(TokenType::ControlCharacter),
@@ -490,61 +486,102 @@ where
                     Err(nb::Error::Other(_e)) => Err(Error::Read),
                 }?;
 
-                defmt::debug!("token: {:?}", token);
-
-                defmt::debug!("state: {:?}", state);
-
-                defmt::debug!("resend_command: {:?}", resend_command);
-
-                match state {
-                    ParseState::Command => match token {
-                        TokenType::Character(c)
-                            if c == command.as_bytes()[command_string_index] =>
-                        {
+                match (state, token) {
+                    (ParseState::Command, TokenType::Character(c)) => {
+                        if c == command.as_bytes()[command_string_index] {
                             command_string_index += 1;
                             if command_string_index != command.len() {
                                 state = ParseState::Command;
                             } else {
                                 state = ParseState::ValidatedCommand;
                             };
-                        }
-                        TokenType::EOR => {
-                            resend_command = true;
-                            break;
-                        }
-                        _ => {
-                            command_string_index = 0;
-                            state = ParseState::Command;
-                        }
-                    },
-                    ParseState::ValidatedCommand => match token {
-                        TokenType::ParameterStart => state = ParseState::Parameter,
-                        TokenType::EOR => {
-                            resend_command = true;
-                            break;
-                        } // Retry
-                        _ => return Err(Error::ParseResponseError),
-                    },
-                    ParseState::Parameter => match token {
-                        TokenType::Character(c) => query_response.push(c as char),
-                        // Currently not seperating parameters and just treating them all as a string.
-                        TokenType::ParameterDelimiter => {
-                            query_response.push(PARAMETER_DELIMITER as char)
-                        }
-                        TokenType::Terminator => state = ParseState::ValidatedParameter,
-                        TokenType::EOR => {
-                            resend_command = true;
-                            break;
-                        } // Retry
-                        _ => return Err(Error::ParseResponseError),
-                    },
-                    ParseState::ValidatedParameter => match token {
-                        TokenType::EOR => break, // Stop reading
-                        _ => continue,           // Mop up any noise at the end
-                    },
+                        };
+                    }
+                    (ParseState::Command, TokenType::EOR) => {
+                        resend_command = true;
+                        break;
+                    }
+                    (ParseState::Command, _) => {
+                        command_string_index = 0;
+                        state = ParseState::Command;
+                    }
+                    (ParseState::ValidatedCommand, TokenType::ParameterStart) => {
+                        state = ParseState::Parameter
+                    }
+                    (ParseState::ValidatedCommand, TokenType::EOR) => {
+                        resend_command = true;
+                        break;
+                    }
+                    (ParseState::ValidatedCommand, _) => return Err(Error::ParseResponseError),
+                    (ParseState::Parameter, TokenType::Character(c)) => {
+                        query_response.push(c as char)
+                    }
+
+                    // Currently not seperating parameters and just treating them all as a string.
+                    (ParseState::Parameter, TokenType::ParameterDelimiter) => {
+                        query_response.push(PARAMETER_DELIMITER as char)
+                    }
+                    (ParseState::Parameter, TokenType::Terminator) => {
+                        state = ParseState::ValidatedParameter
+                    }
+                    (ParseState::Parameter, TokenType::EOR) => {
+                        resend_command = true;
+                        break;
+                    }
+                    (ParseState::Parameter, _) => return Err(Error::ParseResponseError),
+                    (ParseState::ValidatedParameter, TokenType::EOR) => break, // Stop reading
+                    (ParseState::ValidatedParameter, _) => continue, // Mop up any noise at the end
                 }
+
+                // match state {
+                //     ParseState::Command => match token {
+                //         TokenType::Character(c)
+                //             if c == command.as_bytes()[command_string_index] =>
+                //         {
+                //             command_string_index += 1;
+                //             if command_string_index != command.len() {
+                //                 state = ParseState::Command;
+                //             } else {
+                //                 state = ParseState::ValidatedCommand;
+                //             };
+                //         }
+                //         TokenType::EOR => {
+                //             resend_command = true;
+                //             break;
+                //         }
+                //         _ => {
+                //             command_string_index = 0;
+                //             state = ParseState::Command;
+                //         }
+                //     },
+                //     ParseState::ValidatedCommand => match token {
+                //         TokenType::ParameterStart => state = ParseState::Parameter,
+                //         TokenType::EOR => {
+                //             resend_command = true;
+                //             break;
+                //         } // Retry
+                //         _ => return Err(Error::ParseResponseError),
+                //     },
+                //     ParseState::Parameter => match token {
+                //         TokenType::Character(c) => query_response.push(c as char),
+                //         // Currently not seperating parameters and just treating them all as a string.
+                //         TokenType::ParameterDelimiter => {
+                //             query_response.push(PARAMETER_DELIMITER as char)
+                //         }
+                //         TokenType::Terminator => state = ParseState::ValidatedParameter,
+                //         TokenType::EOR => {
+                //             resend_command = true;
+                //             break;
+                //         } // Retry
+                //         _ => return Err(Error::ParseResponseError),
+                //     },
+                //     ParseState::ValidatedParameter => match token {
+                //         TokenType::EOR => break, // Stop reading
+                //         _ => continue,           // Mop up any noise at the end
+                //     },
+                // }
             }
-            defmt::debug!("Resend: {}", resend_command);
+
             if resend_command {
                 if number_resends < MAX_NUMBER_RESENDS {
                     number_resends += 1;
