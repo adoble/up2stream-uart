@@ -10,7 +10,7 @@
 // See API description:
 // https://docs.google.com/spreadsheets/d/1gOb4VBruyJgaBZJHClV6dEkoiwf5hkzE/edit?pli=1#gid=425762154
 
-// Accoring to this https://github.com/Resinchem/Arylic-Amp-MQTT/blob/main/src/arylic_amp.ino
+// According to this https://github.com/Resinchem/Arylic-Amp-MQTT/blob/main/src/arylic_amp.ino
 // the commands are terminated with ';' and query responses are terminated with '\n'
 // This is confirmed here https://forum.arylic.com/t/latest-api-documents-and-uart-protocols/534/8
 
@@ -110,20 +110,20 @@ where
             .send_query(COMMAND_STATUS)
             .map_err(|_| Error::SendCommand)?;
 
-        let status_fields: ArrayVec<&str, 20> = response.split(&[':', ',']).collect();
-        // The first field [0] contains the command
+        //let status_fields: ArrayVec<&str, 20> = response.split(&[':', ',']).collect();
+        let status_fields: ArrayVec<&str, 20> = response.split(&[',']).collect();
 
         let device_status = DeviceStatus {
-            source: Source::from_str(status_fields[1])?,
-            mute: Switch::from_str(status_fields[2])?.to_bool()?,
-            volume: Volume::from_str(status_fields[3])?,
-            treble: Treble::from_str(status_fields[4])?,
-            bass: Bass::from_str(status_fields[5])?,
-            net: Switch::from_str(status_fields[6])?.to_bool()?,
-            internet: Switch::from_str(status_fields[7])?.to_bool()?,
-            playing: Switch::from_str(status_fields[8])?.to_bool()?,
-            led: Switch::from_str(status_fields[9])?.to_bool()?,
-            upgrading: Switch::from_str(status_fields[10])?.to_bool()?,
+            source: Source::from_str(status_fields[0])?,
+            mute: Switch::from_str(status_fields[1])?.to_bool()?,
+            volume: Volume::from_str(status_fields[2])?,
+            treble: Treble::from_str(status_fields[3])?,
+            bass: Bass::from_str(status_fields[4])?,
+            net: Switch::from_str(status_fields[5])?.to_bool()?,
+            internet: Switch::from_str(status_fields[6])?.to_bool()?,
+            playing: Switch::from_str(status_fields[7])?.to_bool()?,
+            led: Switch::from_str(status_fields[8])?.to_bool()?,
+            upgrading: Switch::from_str(status_fields[9])?.to_bool()?,
         };
 
         Ok(device_status)
@@ -140,28 +140,24 @@ where
     pub fn internet_connection(&mut self) -> Result<bool, Error> {
         let response = self.send_query(COMMAND_WWW)?;
 
-        // Response is in the form WWW:{status}\n", so first extract the status
-        let start = COMMAND_WWW.len() + 1;
-        let end = start + 1;
-        if let Some(s) = response.get(start..end) {
-            Switch::from_str(s)?.to_bool()
-        } else {
-            Err(Error::IllFormedReponse)
+        if response.len() != 1 {
+            return Err(Error::IllFormedReponse);
         }
+
+        let internet_connection_status = Switch::from_str(response.as_str())?;
+
+        internet_connection_status.to_bool()
     }
 
     /// Get if audio out has been enabled.
     pub fn audio_out(&mut self) -> Result<bool, Error> {
         let response = self.send_query(COMMAND_AUD)?;
 
-        // Response is in the form AUD:{0/1}\n", so first extract the status
-        let start = COMMAND_AUD.len() + 1;
-        let end = start + 1;
-        if let Some(s) = response.get(start..end) {
-            Switch::from_str(s)?.to_bool()
-        } else {
-            Err(Error::IllFormedReponse)
+        if response.len() > 1 {
+            return Err(Error::IllFormedReponse);
         }
+
+        Switch::from_str(response.as_str())?.to_bool()
     }
 
     pub fn set_audio_out(&mut self, enable: bool) -> Result<(), Error> {
@@ -184,10 +180,7 @@ where
     pub fn input_source(&mut self) -> Result<Source, Error> {
         let response = self.send_query(COMMAND_SRC)?;
 
-        // A response is in the form
-        // SRC:{source string}
-        let parts: ArrayVec<&str, 2> = response.split(':').collect();
-        let source = Source::from_str(parts[1])?;
+        let source = Source::from_str(response.as_str())?;
         Ok(source)
     }
 
@@ -211,10 +204,12 @@ where
     pub fn volume(&mut self) -> Result<Volume, Error> {
         let response = self.send_query(COMMAND_VOL)?;
 
-        // Response is in the form VOL:{vol}", so first extract the volume
-        let parts: ArrayVec<&str, 2> = response.split(':').collect();
+        let volume = Volume::from_str(response.as_str())?;
 
-        let volume = Volume::from_str(parts[1])?;
+        // Response is in the form VOL:{vol}", so first extract the volume
+        // let parts: ArrayVec<&str, 2> = response.split(':').collect();
+
+        // let volume = Volume::from_str(parts[1])?;
 
         Ok(volume)
     }
@@ -233,12 +228,9 @@ where
     pub fn mute_status(&mut self) -> Result<bool, Error> {
         let response = self.send_query(COMMAND_MUT)?;
 
-        // Response is in the form MUT:{0/1}\n", so first extract the status
-        let parts: ArrayVec<&str, 2> = response.split(':').collect();
+        let mute_status = Switch::from_str(response.as_str())?;
 
-        let status = Switch::from_str(parts[1])?.to_bool()?;
-
-        Ok(status)
+        mute_status.to_bool()
     }
 
     /// Mute or unmute the audio.
@@ -373,9 +365,9 @@ where
     //    <COMMAND> = <COMMAND_NAME> ";" | <COMMAND_NAME> ":" <PARAMETER> ";"
     fn send_command(&mut self, command: &str, parameter: &[u8]) -> Result<(), Error> {
         // First write a terminator character. This resets the channel.
-        self.uart
-            .write(TERMINATOR)
-            .map_err(|_| Error::SendCommand)?;
+        // self.uart
+        //     .write(TERMINATOR)
+        //     .map_err(|_| Error::SendCommand)?;
 
         // Now send the command characters
         for c in command.chars() {
@@ -474,6 +466,7 @@ where
             loop {
                 let token = match self.uart.read() {
                     Ok(c) if c.is_ascii_alphanumeric() => Ok(TokenType::Character(c)),
+                    Ok(c) if c == b'-' => Ok(TokenType::Character(c)), // Occurs in the version number and negative numbers
                     Ok(c) if c.is_ascii_control() => Ok(TokenType::ControlCharacter),
                     Ok(c) if c == TERMINATOR => Ok(TokenType::Terminator),
                     Ok(c) if c == PARAMETER_START => Ok(TokenType::ParameterStart),
