@@ -17,7 +17,7 @@
 // Baud is 115200,8,N,1, no flow control.
 // Source https://forum.arylic.com/t/latest-api-documents-and-uart-protocols/534/5
 
-//use nb::block;
+use nb::block;
 
 use core::str::FromStr;
 
@@ -431,23 +431,34 @@ where
         loop {
             // Send (or resend) the command characters
             for c in command.chars() {
-                self.uart.write(c as u8).map_err(|_| Error::SendCommand)?;
+                block!(self.uart.write(c as u8)).map_err(|_| Error::SendCommand)?;
             }
 
-            self.uart
-                .write(TERMINATOR)
-                .map_err(|_| Error::SendCommand)?;
+            block!(self.uart.write(TERMINATOR)).map_err(|_| Error::SendCommand)?;
 
-            //self.uart.flush().map_err(|_| Error::SendCommand)?;
+            block!(self.uart.flush()).map_err(|_| Error::SendCommand)?;
 
             #[cfg_attr(not(test), derive(defmt::Format))] // Only used when running on target hardware
             enum TokenType {
                 Character(u8),
                 EOR,
-                ControlCharacter,
-                Terminator,
-                ParameterStart,
-                ParameterDelimiter,
+                ControlCharacter(u8),
+                Terminator(u8),
+                ParameterStart(u8),
+                ParameterDelimiter(u8),
+            }
+
+            impl TokenType {
+                pub fn as_char(&self) -> char {
+                    match self {
+                        Self::Character(c) => *c as char,
+                        Self::ControlCharacter(c) => *c as char,
+                        Self::ParameterStart(c) => *c as char,
+                        Self::ParameterDelimiter(c) => *c as char,
+                        Self::Terminator(c) => *c as char,
+                        Self::EOR => '|',
+                    }
+                }
             }
 
             #[cfg_attr(not(test), derive(defmt::Format))] // Only used when running on target hardware
@@ -467,10 +478,11 @@ where
                 let token = match self.uart.read() {
                     Ok(c) if c.is_ascii_alphanumeric() => Ok(TokenType::Character(c)),
                     Ok(c) if c == b'-' => Ok(TokenType::Character(c)), // Occurs in the version number and negative numbers
-                    Ok(c) if c.is_ascii_control() => Ok(TokenType::ControlCharacter),
-                    Ok(c) if c == TERMINATOR => Ok(TokenType::Terminator),
-                    Ok(c) if c == PARAMETER_START => Ok(TokenType::ParameterStart),
-                    Ok(c) if c == PARAMETER_DELIMITER => Ok(TokenType::ParameterDelimiter),
+                    Ok(c) if c == b'+' => Ok(TokenType::Character(c)), // Occurs in certain commands
+                    Ok(c) if c.is_ascii_control() => Ok(TokenType::ControlCharacter(c)),
+                    Ok(c) if c == TERMINATOR => Ok(TokenType::Terminator(c)),
+                    Ok(c) if c == PARAMETER_START => Ok(TokenType::ParameterStart(c)),
+                    Ok(c) if c == PARAMETER_DELIMITER => Ok(TokenType::ParameterDelimiter(c)),
                     // Other characters should not occur
                     Ok(_) => Err(Error::Read),
                     // Assuming that Err(WouldBlock) is an end of record.
@@ -478,6 +490,8 @@ where
                     // Read error condition
                     Err(nb::Error::Other(_e)) => Err(Error::Read),
                 }?;
+
+                defmt::debug!("token: {:?}  {:?}", token, token.as_char());
 
                 match (state, token) {
                     (ParseState::Command, TokenType::Character(c)) => {
@@ -498,7 +512,7 @@ where
                         command_string_index = 0;
                         state = ParseState::Command;
                     }
-                    (ParseState::ValidatedCommand, TokenType::ParameterStart) => {
+                    (ParseState::ValidatedCommand, TokenType::ParameterStart(_)) => {
                         state = ParseState::Parameter
                     }
                     (ParseState::ValidatedCommand, TokenType::EOR) => {
@@ -511,10 +525,10 @@ where
                     }
 
                     // Currently not seperating parameters and just treating them all as a string.
-                    (ParseState::Parameter, TokenType::ParameterDelimiter) => {
+                    (ParseState::Parameter, TokenType::ParameterDelimiter(_)) => {
                         query_response.push(PARAMETER_DELIMITER as char)
                     }
-                    (ParseState::Parameter, TokenType::Terminator) => {
+                    (ParseState::Parameter, TokenType::Terminator(_)) => {
                         state = ParseState::ValidatedParameter
                     }
                     (ParseState::Parameter, TokenType::EOR) => {

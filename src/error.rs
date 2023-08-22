@@ -20,5 +20,6 @@ pub enum Error {
     CannotConvert,
     Timeout,
     Read,
+    Write,
     Unimplemented,
 }
