@@ -17,7 +17,7 @@
 // Baud is 115200,8,N,1, no flow control.
 // Source https://forum.arylic.com/t/latest-api-documents-and-uart-protocols/534/5
 
-use nb::block;
+//use nb::block;
 
 use core::str::FromStr;
 

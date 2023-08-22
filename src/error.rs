@@ -1,3 +1,5 @@
+#![allow(unused_imports)]
+
 // Do not include this when testing in std environment
 #[cfg(not(test))]
 use defmt::Format;

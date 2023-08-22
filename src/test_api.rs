@@ -202,7 +202,6 @@ fn internet_connection() {
 }
 
 #[test]
-#[test]
 fn audio_out() {
     let expectations = [
         //SerialTransaction::write(b';'),
