@@ -30,7 +30,9 @@ mod error;
 mod parameter_types;
 
 use crate::error::Error;
-use crate::parameter_types::{
+
+// Re-exports???? TODO
+pub use crate::parameter_types::{
     AudioChannel, Bass, DeviceStatus, Led, LoopMode, MultiroomState, PlayPreset, Playback, Source,
     Switch, SystemControl, Treble, Volume,
 };
@@ -425,179 +427,101 @@ where
         //     .write(TERMINATOR)
         //     .map_err(|_| Error::SendCommand)?;
 
-        let mut number_resends: u8 = 0;
-        let mut resend_command = false;
+        // Send  the command characters
+        for c in command.chars() {
+            block!(self.uart.write(c as u8)).map_err(|_| Error::SendCommand)?;
+        }
 
+        block!(self.uart.write(TERMINATOR)).map_err(|_| Error::SendCommand)?;
+
+        block!(self.uart.flush()).map_err(|_| Error::SendCommand)?;
+
+        #[cfg_attr(not(test), derive(defmt::Format))] // Only used when running on target hardware
+        enum Symbol {
+            Character(u8),
+            Block,
+            ControlCharacter(u8),
+            Terminator(u8),
+            ParameterStart(u8),
+            ParameterDelimiter(u8),
+        }
+
+        impl Symbol {
+            pub fn as_char(&self) -> char {
+                match self {
+                    Self::Character(c) => *c as char,
+                    Self::ControlCharacter(c) => *c as char,
+                    Self::ParameterStart(c) => *c as char,
+                    Self::ParameterDelimiter(c) => *c as char,
+                    Self::Terminator(c) => *c as char,
+                    Self::Block => '|',
+                }
+            }
+        }
+
+        #[cfg_attr(not(test), derive(defmt::Format))] // Only used when running on target hardware
+        #[derive(Clone, Copy)]
+        enum ParseState {
+            Command,
+            ValidatedCommand,
+            Parameter,
+        }
+
+        let mut state = ParseState::Command;
+        let mut command_string_index = 0;
+
+        // Read and parse the response
         loop {
-            // Send (or resend) the command characters
-            for c in command.chars() {
-                block!(self.uart.write(c as u8)).map_err(|_| Error::SendCommand)?;
-            }
+            let symbol = match self.uart.read() {
+                Ok(c) if c.is_ascii_alphanumeric() => Ok(Symbol::Character(c)),
+                Ok(c) if c == b'-' => Ok(Symbol::Character(c)), // Occurs in the version number and negative numbers
+                Ok(c) if c == b'+' => Ok(Symbol::Character(c)), // Occurs in certain commands
+                Ok(c) if c.is_ascii_control() => Ok(Symbol::ControlCharacter(c)),
+                Ok(c) if c == TERMINATOR => Ok(Symbol::Terminator(c)),
+                Ok(c) if c == PARAMETER_START => Ok(Symbol::ParameterStart(c)),
+                Ok(c) if c == PARAMETER_DELIMITER => Ok(Symbol::ParameterDelimiter(c)),
+                // Other characters should not occur
+                Ok(_) => Err(Error::Read),
+                // Assuming that Err(WouldBlock) is an end of record.
+                Err(nb::Error::WouldBlock) => Ok(Symbol::Block),
+                // Read error condition
+                Err(nb::Error::Other(_e)) => return Err(Error::Read),
+            }?;
 
-            block!(self.uart.write(TERMINATOR)).map_err(|_| Error::SendCommand)?;
-
-            block!(self.uart.flush()).map_err(|_| Error::SendCommand)?;
-
-            #[cfg_attr(not(test), derive(defmt::Format))] // Only used when running on target hardware
-            enum TokenType {
-                Character(u8),
-                EOR,
-                ControlCharacter(u8),
-                Terminator(u8),
-                ParameterStart(u8),
-                ParameterDelimiter(u8),
-            }
-
-            impl TokenType {
-                pub fn as_char(&self) -> char {
-                    match self {
-                        Self::Character(c) => *c as char,
-                        Self::ControlCharacter(c) => *c as char,
-                        Self::ParameterStart(c) => *c as char,
-                        Self::ParameterDelimiter(c) => *c as char,
-                        Self::Terminator(c) => *c as char,
-                        Self::EOR => '|',
-                    }
-                }
-            }
-
-            #[cfg_attr(not(test), derive(defmt::Format))] // Only used when running on target hardware
-            #[derive(Clone, Copy)]
-            enum ParseState {
-                Command,
-                ValidatedCommand,
-                Parameter,
-                ValidatedParameter,
-            }
-
-            let mut state = ParseState::Command;
-            let mut command_string_index = 0;
-
-            // Read and parse the response
-            loop {
-                let token = match self.uart.read() {
-                    Ok(c) if c.is_ascii_alphanumeric() => Ok(TokenType::Character(c)),
-                    Ok(c) if c == b'-' => Ok(TokenType::Character(c)), // Occurs in the version number and negative numbers
-                    Ok(c) if c == b'+' => Ok(TokenType::Character(c)), // Occurs in certain commands
-                    Ok(c) if c.is_ascii_control() => Ok(TokenType::ControlCharacter(c)),
-                    Ok(c) if c == TERMINATOR => Ok(TokenType::Terminator(c)),
-                    Ok(c) if c == PARAMETER_START => Ok(TokenType::ParameterStart(c)),
-                    Ok(c) if c == PARAMETER_DELIMITER => Ok(TokenType::ParameterDelimiter(c)),
-                    // Other characters should not occur
-                    Ok(_) => Err(Error::Read),
-                    // Assuming that Err(WouldBlock) is an end of record.
-                    Err(nb::Error::WouldBlock) => Ok(TokenType::EOR),
-                    // Read error condition
-                    Err(nb::Error::Other(_e)) => Err(Error::Read),
-                }?;
-
-                defmt::debug!("token: {:?}  {:?}", token, token.as_char());
-
-                match (state, token) {
-                    (ParseState::Command, TokenType::Character(c)) => {
-                        if c == command.as_bytes()[command_string_index] {
-                            command_string_index += 1;
-                            if command_string_index != command.len() {
-                                state = ParseState::Command;
-                            } else {
-                                state = ParseState::ValidatedCommand;
-                            };
+            match (state, symbol) {
+                (ParseState::Command, Symbol::Character(c)) => {
+                    if c == command.as_bytes()[command_string_index] {
+                        command_string_index += 1;
+                        if command_string_index != command.len() {
+                            state = ParseState::Command;
+                        } else {
+                            state = ParseState::ValidatedCommand;
                         };
-                    }
-                    (ParseState::Command, TokenType::EOR) => {
-                        resend_command = true;
-                        break;
-                    }
-                    (ParseState::Command, _) => {
-                        command_string_index = 0;
-                        state = ParseState::Command;
-                    }
-                    (ParseState::ValidatedCommand, TokenType::ParameterStart(_)) => {
-                        state = ParseState::Parameter
-                    }
-                    (ParseState::ValidatedCommand, TokenType::EOR) => {
-                        resend_command = true;
-                        break;
-                    }
-                    (ParseState::ValidatedCommand, _) => return Err(Error::ParseResponseError),
-                    (ParseState::Parameter, TokenType::Character(c)) => {
-                        query_response.push(c as char)
-                    }
+                    };
+                }
+                (ParseState::Command, Symbol::Block) => state = ParseState::Command,
+                (ParseState::Command, _) => {
+                    command_string_index = 0;
+                    state = ParseState::Command;
+                }
+                (ParseState::ValidatedCommand, Symbol::ParameterStart(_)) => {
+                    state = ParseState::Parameter
+                }
+                (ParseState::ValidatedCommand, Symbol::Block) => {
+                    state = ParseState::ValidatedCommand
+                }
+                (ParseState::ValidatedCommand, _) => return Err(Error::ParseResponseError),
+                (ParseState::Parameter, Symbol::Character(c)) => query_response.push(c as char),
 
-                    // Currently not seperating parameters and just treating them all as a string.
-                    (ParseState::Parameter, TokenType::ParameterDelimiter(_)) => {
-                        query_response.push(PARAMETER_DELIMITER as char)
-                    }
-                    (ParseState::Parameter, TokenType::Terminator(_)) => {
-                        state = ParseState::ValidatedParameter
-                    }
-                    (ParseState::Parameter, TokenType::EOR) => {
-                        resend_command = true;
-                        break;
-                    }
-                    (ParseState::Parameter, _) => return Err(Error::ParseResponseError),
-                    (ParseState::ValidatedParameter, TokenType::EOR) => break, // Stop reading
-                    (ParseState::ValidatedParameter, _) => continue, // Mop up any noise at the end
+                // Currently not seperating parameters and just treating them all as a string.
+                (ParseState::Parameter, Symbol::ParameterDelimiter(_)) => {
+                    query_response.push(PARAMETER_DELIMITER as char)
                 }
 
-                // match state {
-                //     ParseState::Command => match token {
-                //         TokenType::Character(c)
-                //             if c == command.as_bytes()[command_string_index] =>
-                //         {
-                //             command_string_index += 1;
-                //             if command_string_index != command.len() {
-                //                 state = ParseState::Command;
-                //             } else {
-                //                 state = ParseState::ValidatedCommand;
-                //             };
-                //         }
-                //         TokenType::EOR => {
-                //             resend_command = true;
-                //             break;
-                //         }
-                //         _ => {
-                //             command_string_index = 0;
-                //             state = ParseState::Command;
-                //         }
-                //     },
-                //     ParseState::ValidatedCommand => match token {
-                //         TokenType::ParameterStart => state = ParseState::Parameter,
-                //         TokenType::EOR => {
-                //             resend_command = true;
-                //             break;
-                //         } // Retry
-                //         _ => return Err(Error::ParseResponseError),
-                //     },
-                //     ParseState::Parameter => match token {
-                //         TokenType::Character(c) => query_response.push(c as char),
-                //         // Currently not seperating parameters and just treating them all as a string.
-                //         TokenType::ParameterDelimiter => {
-                //             query_response.push(PARAMETER_DELIMITER as char)
-                //         }
-                //         TokenType::Terminator => state = ParseState::ValidatedParameter,
-                //         TokenType::EOR => {
-                //             resend_command = true;
-                //             break;
-                //         } // Retry
-                //         _ => return Err(Error::ParseResponseError),
-                //     },
-                //     ParseState::ValidatedParameter => match token {
-                //         TokenType::EOR => break, // Stop reading
-                //         _ => continue,           // Mop up any noise at the end
-                //     },
-                // }
-            }
+                (ParseState::Parameter, Symbol::Terminator(_)) => break, // Finished parsing
+                (ParseState::Parameter, Symbol::Block) => state = ParseState::Parameter,
 
-            if resend_command {
-                if number_resends < MAX_NUMBER_RESENDS {
-                    number_resends += 1;
-                    continue;
-                } else {
-                    return Err(Error::Timeout);
-                }
-            } else {
-                break;
+                (ParseState::Parameter, _) => return Err(Error::IllFormedReponse),
             }
         }
 
