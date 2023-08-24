@@ -9,7 +9,7 @@ use defmt::Format;
 pub enum Error {
     NotSupportedForDeviceSource,
     ReadingQueryResponse,
-    ParseResponseError,
+    ParseResponse,
     NonUTF8,
     SendCommand,
     SourceNotKnown,
