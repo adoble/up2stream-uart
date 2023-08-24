@@ -2,21 +2,24 @@ use core::str::FromStr;
 
 use crate::error::Error;
 
-fn base_10_bytes(mut value: u64, buf: &mut [u8]) -> &[u8] {
-    if value == 0 {
-        return b"0";
-    }
-    let mut i = 0;
-    while value > 0 {
-        buf[i] = (value % 10) as u8 + b'0';
-        value /= 10;
-        i += 1;
-    }
-    let slice = &mut buf[..i];
-    slice.reverse();
-    &*slice
-}
+// // Takes an integer value and converts to a set of ascii (u8) bytes
+// // representing the number.
+// fn base_10_bytes(mut value: u64, buf: &mut [u8]) -> &[u8] {
+//     if value == 0 {
+//         return b"0";
+//     }
+//     let mut i = 0;
+//     while value > 0 {
+//         buf[i] = (value % 10) as u8 + b'0';
+//         value /= 10;
+//         i += 1;
+//     }
+//     let slice = &mut buf[..i];
+//     slice.reverse();
+//     &*slice
+// }
 
+/// Represents a volume from 0 to 100.
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Volume(u8); //0..100
 
@@ -29,6 +32,8 @@ impl Volume {
             Err(Error::OutOfRange)
         }
     }
+
+    //
 
     pub fn get(&self) -> u8 {
         self.0
@@ -68,7 +73,7 @@ impl FromStr for Volume {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Treble(i8); //-10..10
 impl Treble {
     pub fn new(treble: i8) -> Result<Self, Error> {
@@ -93,7 +98,7 @@ impl FromStr for Treble {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Bass(i8); //-10..10
 impl Bass {
     pub fn new(bass: i8) -> Result<Self, Error> {
@@ -118,7 +123,7 @@ impl FromStr for Bass {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub struct PlayPreset(u8); // 0..10
 impl PlayPreset {
     pub fn new(preset: u8) -> Result<Self, Error> {
@@ -145,7 +150,7 @@ impl FromStr for PlayPreset {
 
 ///  A parameter that is used for on/off/toggle swiths in the UART API.
 ///  If the state is either On or Off it can be converted to a boolean (true for On).
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Switch {
     On,
     Off,
@@ -332,6 +337,23 @@ mod test {
     use arrayvec::ArrayVec;
 
     use super::*;
+
+    // Test utility to take an integer value and converts to a set of
+    // ascii (u8) bytes representing a number.
+    fn base_10_bytes(mut value: u64, buf: &mut [u8]) -> &[u8] {
+        if value == 0 {
+            return b"0";
+        }
+        let mut i = 0;
+        while value > 0 {
+            buf[i] = (value % 10) as u8 + b'0';
+            value /= 10;
+            i += 1;
+        }
+        let slice = &mut buf[..i];
+        slice.reverse();
+        &*slice
+    }
 
     #[test]
     fn test_base_10_bytes() {
