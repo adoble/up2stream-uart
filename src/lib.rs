@@ -83,9 +83,11 @@ where
     UART: Write<u8> + Read<u8>,
 {
     /// Create a new Up2Stream driver from an object that inplements the read and write traits.
-    //pub fn new(uart_reader: R, uart_writer: W) -> Up2Stream<R, W> {
-    //pub fn new(uart: impl Read<u8> + Write<u8>) -> Up2Stream<UART> {
     pub fn new(uart: &mut UART) -> Up2Stream<UART> {
+        // This seems to be required by the device before usage.
+        // It can fail, but the uart channel is then usable
+        block!(uart.write(TERMINATOR)).ok();
+
         Up2Stream {
             uart,
             response: ArrayString::<MAX_SIZE_RESPONSE>::new(),
