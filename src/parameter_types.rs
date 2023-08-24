@@ -17,7 +17,7 @@ fn base_10_bytes(mut value: u64, buf: &mut [u8]) -> &[u8] {
     &*slice
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Volume(u8); //0..100
 
 impl Volume {
