@@ -11,7 +11,7 @@ use super::*;
 fn send_command() {
     let msg = "CMD:on;".as_bytes();
     let expectations = [
-        //SerialTransaction::write(b';'),
+        SerialTransaction::write(b';'),
         SerialTransaction::write_many(msg),
         SerialTransaction::flush(),
     ];
@@ -30,7 +30,7 @@ fn send_command() {
 #[test]
 fn send_query() {
     let expectations = [
-        //SerialTransaction::write(b';'),
+        SerialTransaction::write(b';'),
         SerialTransaction::write_many(b"CMD;"),
         SerialTransaction::flush(),
         SerialTransaction::read_many(b"CMD:on;"),
@@ -51,7 +51,7 @@ fn send_query() {
 #[test]
 fn send_query_rx_with_noise_at_begining() {
     let expectations = [
-        //SerialTransaction::write(b';'),
+        SerialTransaction::write(b';'),
         SerialTransaction::write_many(b"CMD;"),
         SerialTransaction::flush(),
         SerialTransaction::read_many(b"42;\n\rMD:off;"), // Noise
@@ -73,6 +73,7 @@ fn send_query_rx_with_noise_at_begining() {
 #[test]
 fn send_query_slow_response() {
     let expectations = [
+        SerialTransaction::write(b';'),
         SerialTransaction::write_many(b"CMD;"),
         SerialTransaction::flush(),
         SerialTransaction::read_error(nb::Error::WouldBlock),
