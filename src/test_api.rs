@@ -13,7 +13,6 @@ fn send_command() {
     let expectations = [
         SerialTransaction::write(b';'),
         SerialTransaction::write_many(msg),
-        SerialTransaction::flush(),
     ];
 
     let mut serial = SerialMock::new(&expectations);
@@ -99,6 +98,7 @@ fn send_query_slow_response() {
 #[test]
 fn send_query_noise_at_end() {
     let expectations = [
+        SerialTransaction::write(b';'),
         SerialTransaction::write_many(b"CMD;"),
         SerialTransaction::flush(),
         SerialTransaction::read_many(b"CMD:on;"),
@@ -125,11 +125,10 @@ fn send_query_noise_at_end() {
 #[test]
 fn send_query_rx_parameter_list() {
     let expectations = [
-        //SerialTransaction::write(b';'),
+        SerialTransaction::write(b';'),
         SerialTransaction::write_many(b"CMD;"),
         SerialTransaction::flush(),
         SerialTransaction::read_many(b"CMD:BT,1,456,PARA;"),
-        //SerialTransaction::read_error(nb::Error::WouldBlock),
     ];
     let mut serial = SerialMock::new(&expectations);
 
@@ -145,11 +144,10 @@ fn send_query_rx_parameter_list() {
 #[test]
 fn firmware_version() {
     let expectations = [
-        //SerialTransaction::write(b';'),
+        SerialTransaction::write(b';'),
         SerialTransaction::write_many(b"VER;"),
         SerialTransaction::flush(),
         SerialTransaction::read_many(b"VER:1234-13-42;"),
-        //SerialTransaction::read_error(nb::Error::WouldBlock),
     ];
 
     let mut serial = SerialMock::new(&expectations);
@@ -166,11 +164,10 @@ fn firmware_version() {
 #[test]
 fn device_status() -> Result<(), Error> {
     let expectations = [
-        //SerialTransaction::write(b';'),
+        SerialTransaction::write(b';'),
         SerialTransaction::write_many(b"STA;"),
         SerialTransaction::flush(),
         SerialTransaction::read_many(b"STA:BT,0,50,-4,4,1,1,1,0,0;"),
-        //SerialTransaction::read_error(nb::Error::WouldBlock),
     ];
 
     let expected_device_status = DeviceStatus {
@@ -220,9 +217,8 @@ fn system_control() {
 #[test]
 fn execute_system_control() {
     let expectations = [
-        //SerialTransaction::write(b';'),
+        SerialTransaction::write(b';'),
         SerialTransaction::write_many(b"SYS:RESET;"),
-        SerialTransaction::flush(),
     ];
 
     let mut serial = SerialMock::new(&expectations);
@@ -239,11 +235,10 @@ fn execute_system_control() {
 #[test]
 fn internet_connection() {
     let expectations = [
-        //SerialTransaction::write(b';'),
+        SerialTransaction::write(b';'),
         SerialTransaction::write_many(b"WWW;"),
         SerialTransaction::flush(),
         SerialTransaction::read_many(b"WWW:1;"),
-        //SerialTransaction::read_error(nb::Error::WouldBlock),
     ];
 
     let mut serial = SerialMock::new(&expectations);
@@ -262,7 +257,7 @@ fn internet_connection() {
 #[test]
 fn audio_out() {
     let expectations = [
-        //SerialTransaction::write(b';'),
+        SerialTransaction::write(b';'),
         SerialTransaction::write_many(b"AUD;"),
         SerialTransaction::flush(),
         SerialTransaction::read_many(b"AUD:1;"),
@@ -285,7 +280,7 @@ fn audio_out() {
 #[test]
 fn audio_out_err() {
     let expectations = [
-        //SerialTransaction::write(b';'),
+        SerialTransaction::write(b';'),
         SerialTransaction::write_many(b"AUD;"),
         SerialTransaction::flush(),
         SerialTransaction::read_many(b"AUD:T;"),
@@ -305,9 +300,8 @@ fn audio_out_err() {
 #[test]
 fn set_audio_out() {
     let expectations = [
-        //SerialTransaction::write(b';'),
+        SerialTransaction::write(b';'),
         SerialTransaction::write_many(b"AUD:1;"),
-        SerialTransaction::flush(),
     ];
 
     let mut serial = SerialMock::new(&expectations);
@@ -324,11 +318,10 @@ fn set_audio_out() {
 #[test]
 fn input_source() {
     let expectations = [
-        //SerialTransaction::write(b';'),
+        SerialTransaction::write(b';'),
         SerialTransaction::write_many(b"SRC;"),
         SerialTransaction::flush(),
         SerialTransaction::read_many(b"SRC:BT;"),
-        //SerialTransaction::read_error(nb::Error::WouldBlock),
     ];
 
     let mut serial = SerialMock::new(&expectations);
@@ -349,9 +342,8 @@ fn input_source() {
 #[test]
 fn select_input_source() {
     let expectations = [
-        //SerialTransaction::write(b';'),
+        SerialTransaction::write(b';'),
         SerialTransaction::write_many(b"SRC:COAX;"),
-        SerialTransaction::flush(),
     ];
 
     let mut serial = SerialMock::new(&expectations);
@@ -368,11 +360,10 @@ fn select_input_source() {
 #[test]
 fn volume() {
     let expectations = [
-        //SerialTransaction::write(b';'),
+        SerialTransaction::write(b';'),
         SerialTransaction::write_many(b"VOL;"),
         SerialTransaction::flush(),
         SerialTransaction::read_many(b"VOL:50;"),
-        //SerialTransaction::read_error(nb::Error::WouldBlock),
     ];
 
     let mut serial = SerialMock::new(&expectations);
@@ -391,9 +382,8 @@ fn volume() {
 #[test]
 fn set_volume() {
     let expectations = [
-        //SerialTransaction::write(b';'),
+        SerialTransaction::write(b';'),
         SerialTransaction::write_many(b"VOL:34;"),
-        SerialTransaction::flush(),
     ];
 
     let mut serial = SerialMock::new(&expectations);
@@ -410,11 +400,10 @@ fn set_volume() {
 #[test]
 fn mute_status() {
     let expectations = [
-        //SerialTransaction::write(b';'),
+        SerialTransaction::write(b';'),
         SerialTransaction::write_many(b"MUT;"),
         SerialTransaction::flush(),
         SerialTransaction::read_many(b"MUT:0;"),
-        //SerialTransaction::read_error(nb::Error::WouldBlock),
     ];
 
     let mut serial = SerialMock::new(&expectations);
@@ -431,9 +420,8 @@ fn mute_status() {
 #[test]
 fn set_mute() {
     let expectations = [
-        //SerialTransaction::write(b';'),
+        SerialTransaction::write(b';'),
         SerialTransaction::write_many(b"MUT:1;"),
-        SerialTransaction::flush(),
     ];
 
     let mut serial = SerialMock::new(&expectations);
@@ -450,9 +438,8 @@ fn set_mute() {
 #[test]
 fn toogle_mute() {
     let expectations = [
-        //SerialTransaction::write(b';'),
+        SerialTransaction::write(b';'),
         SerialTransaction::write_many(b"MUT:T;"),
-        SerialTransaction::flush(),
     ];
 
     let mut serial = SerialMock::new(&expectations);
