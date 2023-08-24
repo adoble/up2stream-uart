@@ -510,7 +510,7 @@ where
                 (ParseState::ValidatedCommand, Symbol::Block) => {
                     state = ParseState::ValidatedCommand
                 }
-                (ParseState::ValidatedCommand, _) => return Err(Error::ParseResponseError),
+                (ParseState::ValidatedCommand, _) => return Err(Error::ParseResponse),
                 (ParseState::Parameter, Symbol::Character(c)) => query_response.push(c as char),
 
                 // Currently not seperating parameters and just treating them all as a string.
