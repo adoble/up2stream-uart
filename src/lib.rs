@@ -378,7 +378,7 @@ where
             self.uart.write(c as u8).map_err(|_| Error::SendCommand)?;
         }
 
-        // Send parameters if availble
+        // Send parameters if available
         if !parameter.is_empty() {
             self.uart
                 .write(PARAMETER_START)
@@ -392,8 +392,6 @@ where
         self.uart
             .write(TERMINATOR)
             .map_err(|_| Error::SendCommand)?;
-
-        self.uart.flush().map_err(|_| Error::SendCommand)?;
 
         Ok(())
     }
