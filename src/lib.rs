@@ -31,7 +31,7 @@ mod parameter_types;
 
 use crate::error::Error;
 
-// Re-exports???? TODO
+// Re-exports of parameter types
 pub use crate::parameter_types::{
     AudioChannel, Bass, DeviceStatus, Led, LoopMode, MultiroomState, PlayPreset, Playback, Source,
     Switch, SystemControl, Treble, Volume,
@@ -175,6 +175,8 @@ where
     /// Get the current input source.
     /// #Example
     /// ```ignore
+    /// use up2stream_uart::Source;
+    ///
     /// let source: Source = driver.input_source().unwrap();
     /// match source {
     /// Source::Bluetooth => todo!(),
@@ -209,11 +211,6 @@ where
         let response = self.send_query(COMMAND_VOL)?;
 
         let volume = Volume::from_str(response.as_str())?;
-
-        // Response is in the form VOL:{vol}", so first extract the volume
-        // let parts: ArrayVec<&str, 2> = response.split(':').collect();
-
-        // let volume = Volume::from_str(parts[1])?;
 
         Ok(volume)
     }
@@ -257,11 +254,18 @@ where
     /// let bass: Bass = driver.bass().unwrap();
     /// ```
     pub fn bass(&mut self) -> Result<Bass, Error> {
-        todo!();
+        let response = self.send_query(COMMAND_BAS)?;
+
+        let bass = Bass::from_str(response.as_str())?;
+
+        Ok(bass)
     }
-    pub fn set_bass(&mut self, _bass: Bass) -> Result<(), Error> {
-        todo!();
+
+    pub fn set_bass(&mut self, bass: Bass) -> Result<(), Error> {
+        let mut buf = [0; 3];
+        self.send_command(COMMAND_BAS, bass.as_parameter_str(&mut buf))
     }
+
     pub fn treble(&mut self) -> Result<Treble, Error> {
         todo!();
     }
@@ -436,7 +440,7 @@ where
 
         block!(self.uart.flush()).map_err(|_| Error::SendCommand)?;
 
-        #[cfg_attr(not(test), derive(defmt::Format))] // Only used when running on target hardware
+        //#[cfg_attr(not(test), derive(defmt::Format))] // Only used when running on target hardware
         enum Symbol {
             Character(u8),
             Block,
@@ -459,7 +463,7 @@ where
             }
         }
 
-        #[cfg_attr(not(test), derive(defmt::Format))] // Only used when running on target hardware
+        //#[cfg_attr(not(test), derive(defmt::Format))] // Only used when running on target hardware
         #[derive(Clone, Copy)]
         enum ParseState {
             Command,

@@ -98,6 +98,19 @@ impl FromStr for Treble {
     }
 }
 
+/// Represents a bass setting.
+/// Bass settings can be from -10 to 10.
+///
+/// # Examples
+/// ```
+/// use  up2stream_uart::Bass;
+///
+/// let bass = Bass::new(5).unwrap();
+///
+/// assert_eq!(5, bass.get());
+///
+/// ```
+///
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Bass(i8); //-10..10
 impl Bass {
@@ -108,6 +121,50 @@ impl Bass {
         } else {
             Err(Error::OutOfRange)
         }
+    }
+
+    pub fn get(&self) -> i8 {
+        self.0
+    }
+
+    pub fn as_parameter_str<'a>(&self, buf: &'a mut [u8]) -> &'a [u8] {
+        let mut value = self.0;
+        if value == 0 {
+            //return b"0";
+            buf[0] = b'0';
+            return &buf[..1];
+        }
+
+        let negative: bool;
+        if value < 0 {
+            negative = true;
+            value = -value;
+        } else {
+            negative = false;
+        }
+
+        let mut i = 0;
+        while value > 0 {
+            let digit: u32 = value as u32 % 10;
+
+            let chr = char::from_digit(digit, 10);
+            if let Some(c) = chr {
+                buf[i] = u8::try_from(c).unwrap_or(b'?');
+            }
+
+            value /= 10;
+            i += 1;
+        }
+        if negative {
+            buf[i] = b'-';
+            i += 1;
+        };
+
+        // Transmission order
+        buf[..i].reverse();
+
+        // Only return the slice worked on
+        &buf[..i]
     }
 }
 
@@ -357,7 +414,7 @@ mod test {
 
     #[test]
     fn test_base_10_bytes() {
-        //TODO remove
+        // This only tests
         let mut buf: [u8; 3] = [0; 3];
         assert_eq!(base_10_bytes(34, &mut buf), b"34");
         assert_eq!(base_10_bytes(255, &mut buf), b"255");
@@ -443,7 +500,6 @@ mod test {
         let mut buf = [0; 3];
         for n in test_input.iter().enumerate() {
             let vol = Volume::new(*n.1).unwrap().as_parameter_str(&mut buf);
-            //assert_eq!(vol, ArrayString::from(expected[n.0]).unwrap());
             assert_eq!(vol, expected[n.0].as_bytes());
         }
     }
@@ -505,7 +561,6 @@ mod test {
         assert!(treble.is_err());
     }
 
-    // ---------------- preset TESTS
     #[test]
     fn new_bass() -> Result<(), Error> {
         let b1 = Bass::new(5)?;
@@ -538,6 +593,13 @@ mod test {
     }
 
     #[test]
+    fn bass_get() {
+        let bass = Bass::new(5).unwrap();
+
+        assert_eq!(5, bass.get());
+    }
+
+    #[test]
     fn bass_from_str() {
         let mut expected_bass = Bass::new(10).unwrap();
 
@@ -560,6 +622,19 @@ mod test {
 
         bass = Bass::from_str("XXX");
         assert!(bass.is_err());
+    }
+
+    #[test]
+    fn bass_parameter_string() {
+        let test_input: [i8; 5] = [10, 5, 0, -4, -10];
+
+        let expected: [&str; 5] = ["10", "5", "0", "-4", "-10"];
+
+        let mut buf = [0; 3];
+        for n in test_input.iter().enumerate() {
+            let bass_parameter = Bass::new(*n.1).unwrap().as_parameter_str(&mut buf);
+            assert_eq!(bass_parameter, expected[n.0].as_bytes());
+        }
     }
 
     // ---------------- PLAYPRESET TESTS
