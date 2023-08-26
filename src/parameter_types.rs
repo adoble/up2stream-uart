@@ -33,8 +33,7 @@ impl Volume {
         }
     }
 
-    //
-
+    /// Get the volume as value
     pub fn get(&self) -> u8 {
         self.0
     }
@@ -83,6 +82,11 @@ impl Treble {
         } else {
             Err(Error::OutOfRange)
         }
+    }
+
+    /// Get the treble settign as value
+    pub fn get(&self) -> i8 {
+        self.0
     }
 }
 
@@ -534,6 +538,13 @@ mod test {
 
         treble = Treble::new(-11);
         assert!(treble.is_err());
+    }
+
+    #[test]
+    fn treble_get() {
+        let treble = Treble::new(-3).unwrap();
+
+        assert_eq!(-3, treble.get());
     }
 
     #[test]
