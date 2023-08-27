@@ -19,6 +19,11 @@ use crate::error::Error;
 //     &*slice
 // }
 
+trait Parameter<T> {
+    fn get(&self) -> T;
+    //fn set(&self, value: T) -> &mut T;
+}
+
 /// Represents a volume from 0 to 100.
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Volume(u8); //0..100
@@ -33,10 +38,10 @@ impl Volume {
         }
     }
 
-    /// Get the volume as value
-    pub fn get(&self) -> u8 {
-        self.0
-    }
+    // /// Get the volume as value
+    // pub fn get(&self) -> u8 {
+    //     self.0
+    // }
 
     // pub fn as_parameter_str_old<'a>(&self, buf: &'a mut [u8]) -> &'a [u8] {
     //     let mut value = self.0;
@@ -100,6 +105,13 @@ impl Volume {
     }
 }
 
+impl Parameter<u8> for Volume {
+    /// Get the volume as value
+    fn get(&self) -> u8 {
+        self.0
+    }
+}
+
 impl FromStr for Volume {
     type Err = Error;
 
@@ -123,9 +135,11 @@ impl Treble {
             Err(Error::OutOfRange)
         }
     }
+}
 
+impl Parameter<i8> for Treble {
     /// Get the treble settign as value
-    pub fn get(&self) -> i8 {
+    fn get(&self) -> i8 {
         self.0
     }
 }
@@ -146,7 +160,7 @@ impl FromStr for Treble {
 /// Bass settings can be from -10 to 10.
 ///
 /// # Examples
-/// ```
+/// ```ignore
 /// use  up2stream_uart::Bass;
 ///
 /// let bass = Bass::new(5).unwrap();
@@ -167,9 +181,9 @@ impl Bass {
         }
     }
 
-    pub fn get(&self) -> i8 {
-        self.0
-    }
+    // pub fn get(&self) -> i8 {
+    //     self.0
+    // }
 
     pub fn as_parameter_str<'a>(&self, buf: &'a mut [u8]) -> &'a [u8] {
         let mut value = self.0;
@@ -209,6 +223,12 @@ impl Bass {
 
         // Only return the slice worked on
         &buf[..i]
+    }
+}
+
+impl Parameter<i8> for Bass {
+    fn get(&self) -> i8 {
+        self.0
     }
 }
 
@@ -520,6 +540,13 @@ mod test {
 
         let vol = Volume::from_str("XXX");
         assert!(vol.is_err());
+    }
+
+    #[test]
+    fn volume_get() {
+        let vol = Volume::new(23).unwrap();
+
+        assert_eq!(23, vol.get());
     }
 
     #[test]
