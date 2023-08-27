@@ -38,24 +38,64 @@ impl Volume {
         self.0
     }
 
+    // pub fn as_parameter_str_old<'a>(&self, buf: &'a mut [u8]) -> &'a [u8] {
+    //     let mut value = self.0;
+    //     if value == 0 {
+    //         //return b"0";
+    //         buf[0] = b'0';
+    //         return &buf[..1];
+    //     }
+    //     let mut i = 0;
+    //     while value > 0 {
+    //         buf[i] = (value % 10) + b'0';
+    //         value /= 10;
+    //         i += 1;
+    //     }
+    //     // let slice = &mut buf[..i];
+    //     // slice.reverse();
+    //     // &*slice
+    //     buf[..i].reverse();
+    //     // SAFETY: ??
+    //     &buf[..i]
+    // }
+
     pub fn as_parameter_str<'a>(&self, buf: &'a mut [u8]) -> &'a [u8] {
-        let mut value = self.0;
+        let mut value: isize = self.0.into();
         if value == 0 {
             //return b"0";
             buf[0] = b'0';
             return &buf[..1];
         }
+
+        let negative: bool;
+        if value < 0 {
+            negative = true;
+            value = -value;
+        } else {
+            negative = false;
+        }
+
         let mut i = 0;
         while value > 0 {
-            buf[i] = (value % 10) + b'0';
+            let digit: u32 = value as u32 % 10;
+
+            let chr = char::from_digit(digit, 10);
+            if let Some(c) = chr {
+                buf[i] = u8::try_from(c).unwrap_or(b'?');
+            }
+
             value /= 10;
             i += 1;
         }
-        // let slice = &mut buf[..i];
-        // slice.reverse();
-        // &*slice
+        if negative {
+            buf[i] = b'-';
+            i += 1;
+        };
+
+        // Transmission order
         buf[..i].reverse();
-        // SAFETY: ??
+
+        // Only return the slice worked on
         &buf[..i]
     }
 }
