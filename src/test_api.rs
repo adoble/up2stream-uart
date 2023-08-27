@@ -199,19 +199,19 @@ fn device_status() -> Result<(), Error> {
 #[test]
 fn system_control() {
     let mut buf: [u8; 10] = [0; 10];
-    assert_eq!(SystemControl::Reboot.as_parameter_str(&mut buf), b"REBOOT");
+    assert_eq!(SystemControl::Reboot.to_parameter_str(&mut buf), b"REBOOT");
     buf = [0; 10];
     assert_eq!(
-        SystemControl::Standby.as_parameter_str(&mut buf),
+        SystemControl::Standby.to_parameter_str(&mut buf),
         b"STANDBY"
     );
     buf = [0; 10];
     assert_eq!(
-        SystemControl::Recover.as_parameter_str(&mut buf),
+        SystemControl::Recover.to_parameter_str(&mut buf),
         b"RECOVER"
     );
     buf = [0; 10];
-    assert_eq!(SystemControl::Reset.as_parameter_str(&mut buf), b"RESET");
+    assert_eq!(SystemControl::Reset.to_parameter_str(&mut buf), b"RESET");
 }
 
 #[test]

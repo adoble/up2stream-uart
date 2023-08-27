@@ -64,7 +64,7 @@ impl Volume {
     //     &buf[..i]
     // }
 
-    pub fn as_parameter_str<'a>(&self, buf: &'a mut [u8]) -> &'a [u8] {
+    pub fn to_parameter_str<'a>(&self, buf: &'a mut [u8]) -> &'a [u8] {
         let mut value: isize = self.0.into();
         if value == 0 {
             //return b"0";
@@ -185,7 +185,7 @@ impl Bass {
     //     self.0
     // }
 
-    pub fn as_parameter_str<'a>(&self, buf: &'a mut [u8]) -> &'a [u8] {
+    pub fn to_parameter_str<'a>(&self, buf: &'a mut [u8]) -> &'a [u8] {
         let mut value = self.0;
         if value == 0 {
             //return b"0";
@@ -287,7 +287,7 @@ impl Switch {
         }
     }
 
-    pub fn as_parameter_str<'a>(&self, buf: &'a mut [u8]) -> &'a [u8] {
+    pub fn to_parameter_str<'a>(&self, buf: &'a mut [u8]) -> &'a [u8] {
         let s = match self {
             Self::Off => "0",
             Self::On => "1",
@@ -333,7 +333,7 @@ pub enum SystemControl {
 
 impl SystemControl {
     //TODO use a standard trait?
-    pub fn as_parameter_str<'a>(&self, buf: &'a mut [u8]) -> &'a [u8] {
+    pub fn to_parameter_str<'a>(&self, buf: &'a mut [u8]) -> &'a [u8] {
         let parameter = match self {
             Self::Reboot => "REBOOT",
             Self::Standby => "STANDBY",
@@ -365,7 +365,7 @@ pub enum Source {
     Hdmi,
 }
 impl Source {
-    pub fn as_parameter_str<'a>(&self, buf: &'a mut [u8]) -> &'a [u8] {
+    pub fn to_parameter_str<'a>(&self, buf: &'a mut [u8]) -> &'a [u8] {
         let parameter = match self {
             Self::Net => "NET",
             Self::Usb => "USB",
@@ -552,14 +552,14 @@ mod test {
     #[test]
     fn volume_parameter_string() {
         let mut buf = [0; 3];
-        assert_eq!(Volume::new(100).unwrap().as_parameter_str(&mut buf), b"100");
-        assert_eq!(Volume::new(99).unwrap().as_parameter_str(&mut buf), b"99");
-        assert_eq!(Volume::new(75).unwrap().as_parameter_str(&mut buf), b"75");
-        assert_eq!(Volume::new(23).unwrap().as_parameter_str(&mut buf), b"23");
-        assert_eq!(Volume::new(10).unwrap().as_parameter_str(&mut buf), b"10");
-        assert_eq!(Volume::new(7).unwrap().as_parameter_str(&mut buf), b"7");
-        assert_eq!(Volume::new(1).unwrap().as_parameter_str(&mut buf), b"1");
-        assert_eq!(Volume::new(0).unwrap().as_parameter_str(&mut buf), b"0");
+        assert_eq!(Volume::new(100).unwrap().to_parameter_str(&mut buf), b"100");
+        assert_eq!(Volume::new(99).unwrap().to_parameter_str(&mut buf), b"99");
+        assert_eq!(Volume::new(75).unwrap().to_parameter_str(&mut buf), b"75");
+        assert_eq!(Volume::new(23).unwrap().to_parameter_str(&mut buf), b"23");
+        assert_eq!(Volume::new(10).unwrap().to_parameter_str(&mut buf), b"10");
+        assert_eq!(Volume::new(7).unwrap().to_parameter_str(&mut buf), b"7");
+        assert_eq!(Volume::new(1).unwrap().to_parameter_str(&mut buf), b"1");
+        assert_eq!(Volume::new(0).unwrap().to_parameter_str(&mut buf), b"0");
     }
 
     #[test]
@@ -570,7 +570,7 @@ mod test {
 
         let mut buf = [0; 3];
         for n in test_input.iter().enumerate() {
-            let vol = Volume::new(*n.1).unwrap().as_parameter_str(&mut buf);
+            let vol = Volume::new(*n.1).unwrap().to_parameter_str(&mut buf);
             assert_eq!(vol, expected[n.0].as_bytes());
         }
     }
@@ -710,7 +710,7 @@ mod test {
 
         let mut buf = [0; 3];
         for n in test_input.iter().enumerate() {
-            let bass_parameter = Bass::new(*n.1).unwrap().as_parameter_str(&mut buf);
+            let bass_parameter = Bass::new(*n.1).unwrap().to_parameter_str(&mut buf);
             assert_eq!(bass_parameter, expected[n.0].as_bytes());
         }
     }
@@ -805,22 +805,22 @@ mod test {
     fn switch_to_string() {
         let mut buf = [0; 1];
 
-        assert_eq!(Switch::Off.as_parameter_str(&mut buf), b"0");
-        assert_eq!(Switch::On.as_parameter_str(&mut buf), b"1");
-        assert_eq!(Switch::Toggle.as_parameter_str(&mut buf), b"T");
+        assert_eq!(Switch::Off.to_parameter_str(&mut buf), b"0");
+        assert_eq!(Switch::On.to_parameter_str(&mut buf), b"1");
+        assert_eq!(Switch::Toggle.to_parameter_str(&mut buf), b"T");
     }
 
     #[test]
-    fn system_control_as_parameter_str() {
+    fn system_control_to_parameter_str() {
         let mut buf: [u8; 7] = [0; 7];
-        assert_eq!(SystemControl::Reboot.as_parameter_str(&mut buf), b"REBOOT");
+        assert_eq!(SystemControl::Reboot.to_parameter_str(&mut buf), b"REBOOT");
         assert_eq!(
-            SystemControl::Standby.as_parameter_str(&mut buf),
+            SystemControl::Standby.to_parameter_str(&mut buf),
             b"STANDBY"
         );
-        assert_eq!(SystemControl::Reset.as_parameter_str(&mut buf), b"RESET");
+        assert_eq!(SystemControl::Reset.to_parameter_str(&mut buf), b"RESET");
         assert_eq!(
-            SystemControl::Recover.as_parameter_str(&mut buf),
+            SystemControl::Recover.to_parameter_str(&mut buf),
             b"RECOVER"
         );
     }

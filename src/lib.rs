@@ -136,7 +136,7 @@ where
     pub fn execute_system_control(&mut self, control: SystemControl) -> Result<(), Error> {
         let mut buf = [0; 64];
 
-        self.send_command(COMMAND_SYSTEM_CONTROL, control.as_parameter_str(&mut buf))?;
+        self.send_command(COMMAND_SYSTEM_CONTROL, control.to_parameter_str(&mut buf))?;
 
         Ok(())
     }
@@ -169,7 +169,7 @@ where
 
         let mut buf = [0; 1];
 
-        self.send_command(COMMAND_AUD, switch.as_parameter_str(&mut buf))
+        self.send_command(COMMAND_AUD, switch.to_parameter_str(&mut buf))
     }
 
     /// Get the current input source.
@@ -198,7 +198,7 @@ where
     /// ```
     pub fn select_input_source(&mut self, source: Source) -> Result<(), Error> {
         let mut buf = [0; 20];
-        self.send_command(COMMAND_SRC, source.as_parameter_str(&mut buf))
+        self.send_command(COMMAND_SRC, source.to_parameter_str(&mut buf))
     }
 
     /// Get the current volume, e.g:
@@ -222,7 +222,7 @@ where
     /// ```
     pub fn set_volume(&mut self, volume: Volume) -> Result<(), Error> {
         let mut buf = [0; 3];
-        self.send_command(COMMAND_VOL, volume.as_parameter_str(&mut buf))
+        self.send_command(COMMAND_VOL, volume.to_parameter_str(&mut buf))
     }
 
     /// Get if the audio is muted or not. .
@@ -246,7 +246,7 @@ where
     /// ```
     pub fn set_mute(&mut self, switch: Switch) -> Result<(), Error> {
         let mut buf = [0; 1];
-        self.send_command(COMMAND_MUT, switch.as_parameter_str(&mut buf))
+        self.send_command(COMMAND_MUT, switch.to_parameter_str(&mut buf))
     }
 
     /// Get the bass value, e.g.;
@@ -263,7 +263,7 @@ where
 
     pub fn set_bass(&mut self, bass: Bass) -> Result<(), Error> {
         let mut buf = [0; 3];
-        self.send_command(COMMAND_BAS, bass.as_parameter_str(&mut buf))
+        self.send_command(COMMAND_BAS, bass.to_parameter_str(&mut buf))
     }
 
     pub fn treble(&mut self) -> Result<Treble, Error> {
