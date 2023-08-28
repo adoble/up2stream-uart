@@ -19,53 +19,12 @@ use crate::error::Error;
 //     &*slice
 // }
 
-trait Parameter<T> {
-    fn get(&self) -> T;
+pub trait ScalarParameter<T> {
+    fn get(&self) -> i8;
     //fn set(&self, value: T) -> &mut T;
-}
 
-/// Represents a volume from 0 to 100.
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub struct Volume(u8); //0..100
-
-impl Volume {
-    pub fn new(volume: u8) -> Result<Volume, Error> {
-        let range = 0..=100;
-        if range.contains(&volume) {
-            Ok(Self(volume))
-        } else {
-            Err(Error::OutOfRange)
-        }
-    }
-
-    // /// Get the volume as value
-    // pub fn get(&self) -> u8 {
-    //     self.0
-    // }
-
-    // pub fn as_parameter_str_old<'a>(&self, buf: &'a mut [u8]) -> &'a [u8] {
-    //     let mut value = self.0;
-    //     if value == 0 {
-    //         //return b"0";
-    //         buf[0] = b'0';
-    //         return &buf[..1];
-    //     }
-    //     let mut i = 0;
-    //     while value > 0 {
-    //         buf[i] = (value % 10) + b'0';
-    //         value /= 10;
-    //         i += 1;
-    //     }
-    //     // let slice = &mut buf[..i];
-    //     // slice.reverse();
-    //     // &*slice
-    //     buf[..i].reverse();
-    //     // SAFETY: ??
-    //     &buf[..i]
-    // }
-
-    pub fn to_parameter_str<'a>(&self, buf: &'a mut [u8]) -> &'a [u8] {
-        let mut value: isize = self.0.into();
+    fn to_parameter_str<'a>(&self, buf: &'a mut [u8]) -> &'a [u8] {
+        let mut value = self.get(); //self.0.into();
         if value == 0 {
             //return b"0";
             buf[0] = b'0';
@@ -105,9 +64,24 @@ impl Volume {
     }
 }
 
-impl Parameter<u8> for Volume {
+/// Represents a volume from 0 to 100.
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub struct Volume(i8);
+
+impl Volume {
+    pub fn new(volume: i8) -> Result<Volume, Error> {
+        let range = 0..=100;
+        if range.contains(&volume) {
+            Ok(Self(volume))
+        } else {
+            Err(Error::OutOfRange)
+        }
+    }
+}
+
+impl ScalarParameter<u8> for Volume {
     /// Get the volume as value
-    fn get(&self) -> u8 {
+    fn get(&self) -> i8 {
         self.0
     }
 }
@@ -116,7 +90,7 @@ impl FromStr for Volume {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let volume_value = s.parse::<u8>().map_err(|_| Error::InvalidString)?;
+        let volume_value = s.parse::<i8>().map_err(|_| Error::InvalidString)?;
 
         let volume = Volume::new(volume_value)?;
 
@@ -137,7 +111,7 @@ impl Treble {
     }
 }
 
-impl Parameter<i8> for Treble {
+impl ScalarParameter<i8> for Treble {
     /// Get the treble settign as value
     fn get(&self) -> i8 {
         self.0
@@ -180,53 +154,9 @@ impl Bass {
             Err(Error::OutOfRange)
         }
     }
-
-    // pub fn get(&self) -> i8 {
-    //     self.0
-    // }
-
-    pub fn to_parameter_str<'a>(&self, buf: &'a mut [u8]) -> &'a [u8] {
-        let mut value = self.0;
-        if value == 0 {
-            //return b"0";
-            buf[0] = b'0';
-            return &buf[..1];
-        }
-
-        let negative: bool;
-        if value < 0 {
-            negative = true;
-            value = -value;
-        } else {
-            negative = false;
-        }
-
-        let mut i = 0;
-        while value > 0 {
-            let digit: u32 = value as u32 % 10;
-
-            let chr = char::from_digit(digit, 10);
-            if let Some(c) = chr {
-                buf[i] = u8::try_from(c).unwrap_or(b'?');
-            }
-
-            value /= 10;
-            i += 1;
-        }
-        if negative {
-            buf[i] = b'-';
-            i += 1;
-        };
-
-        // Transmission order
-        buf[..i].reverse();
-
-        // Only return the slice worked on
-        &buf[..i]
-    }
 }
 
-impl Parameter<i8> for Bass {
+impl ScalarParameter<i8> for Bass {
     fn get(&self) -> i8 {
         self.0
     }
@@ -245,9 +175,9 @@ impl FromStr for Bass {
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
-pub struct PlayPreset(u8); // 0..10
+pub struct PlayPreset(i8); // 0..10
 impl PlayPreset {
-    pub fn new(preset: u8) -> Result<Self, Error> {
+    pub fn new(preset: i8) -> Result<Self, Error> {
         let range = 0..=10;
         if range.contains(&preset) {
             Ok(Self(preset))
@@ -261,7 +191,7 @@ impl FromStr for PlayPreset {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let preset_value = s.parse::<u8>().map_err(|_| Error::InvalidString)?;
+        let preset_value = s.parse::<i8>().map_err(|_| Error::InvalidString)?;
 
         let preset = PlayPreset::new(preset_value)?;
 
@@ -564,7 +494,7 @@ mod test {
 
     #[test]
     fn volume_parameter_string2() {
-        let test_input: [u8; 8] = [100, 99, 75, 23, 10, 7, 1, 0];
+        let test_input: [i8; 8] = [100, 99, 75, 23, 10, 7, 1, 0];
 
         let expected: [&str; 8] = ["100", "99", "75", "23", "10", "7", "1", "0"];
 

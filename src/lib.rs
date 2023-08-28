@@ -37,6 +37,8 @@ pub use crate::parameter_types::{
     Switch, SystemControl, Treble, Volume,
 };
 
+use crate::parameter_types::ScalarParameter;
+
 const MAX_SIZE_RESPONSE: usize = 1024;
 
 // Commands
