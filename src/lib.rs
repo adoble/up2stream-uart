@@ -33,11 +33,9 @@ use crate::error::Error;
 
 // Re-exports of parameter types
 pub use crate::parameter_types::{
-    AudioChannel, Bass, DeviceStatus, Led, LoopMode, MultiroomState, PlayPreset, Playback, Source,
-    Switch, SystemControl, Treble, Volume,
+    AudioChannel, Bass, DeviceStatus, Led, LoopMode, MultiroomState, PlayPreset, Playback,
+    ScalarParameter, Source, Switch, SystemControl, Treble, Volume,
 };
-
-use crate::parameter_types::ScalarParameter;
 
 const MAX_SIZE_RESPONSE: usize = 1024;
 
