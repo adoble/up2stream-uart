@@ -2,31 +2,15 @@ use core::str::FromStr;
 
 use crate::error::Error;
 
-// // Takes an integer value and converts to a set of ascii (u8) bytes
-// // representing the number.
-// fn base_10_bytes(mut value: u64, buf: &mut [u8]) -> &[u8] {
-//     if value == 0 {
-//         return b"0";
-//     }
-//     let mut i = 0;
-//     while value > 0 {
-//         buf[i] = (value % 10) as u8 + b'0';
-//         value /= 10;
-//         i += 1;
-//     }
-//     let slice = &mut buf[..i];
-//     slice.reverse();
-//     &*slice
-// }
-
 pub trait ScalarParameter<T> {
+    // Get the contained value
     fn get(&self) -> i8;
     //fn set(&self, value: T) -> &mut T;
 
+    // Convert the contained value to an array of UTF8 bytes.
     fn to_parameter_str<'a>(&self, buf: &'a mut [u8]) -> &'a [u8] {
         let mut value = self.get(); //self.0.into();
         if value == 0 {
-            //return b"0";
             buf[0] = b'0';
             return &buf[..1];
         }
@@ -187,6 +171,12 @@ impl PlayPreset {
     }
 }
 
+impl ScalarParameter<i8> for PlayPreset {
+    fn get(&self) -> i8 {
+        self.0
+    }
+}
+
 impl FromStr for PlayPreset {
     type Err = Error;
 
@@ -262,7 +252,6 @@ pub enum SystemControl {
 }
 
 impl SystemControl {
-    //TODO use a standard trait?
     pub fn to_parameter_str<'a>(&self, buf: &'a mut [u8]) -> &'a [u8] {
         let parameter = match self {
             Self::Reboot => "REBOOT",
@@ -693,6 +682,19 @@ mod test {
 
         preset = PlayPreset::from_str("XXX");
         assert!(preset.is_err());
+    }
+
+    #[test]
+    fn preset_parameter_string() {
+        let test_input: [i8; 3] = [10, 5, 0];
+
+        let expected: [&str; 3] = ["10", "5", "0"];
+
+        let mut buf = [0; 3];
+        for n in test_input.iter().enumerate() {
+            let parameter = PlayPreset::new(*n.1).unwrap().to_parameter_str(&mut buf);
+            assert_eq!(parameter, expected[n.0].as_bytes());
+        }
     }
 
     #[test]
