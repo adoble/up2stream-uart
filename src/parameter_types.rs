@@ -2,10 +2,9 @@ use core::str::FromStr;
 
 use crate::error::Error;
 
-pub trait ScalarParameter<T> {
+pub trait ScalarParameter {
     // Get the contained value
     fn get(&self) -> i8;
-    //fn set(&self, value: T) -> &mut T;
 
     // Convert the contained value to an array of UTF8 bytes.
     fn to_parameter_str<'a>(&self, buf: &'a mut [u8]) -> &'a [u8] {
@@ -63,7 +62,7 @@ impl Volume {
     }
 }
 
-impl ScalarParameter<u8> for Volume {
+impl ScalarParameter for Volume {
     /// Get the volume as value
     fn get(&self) -> i8 {
         self.0
@@ -95,7 +94,7 @@ impl Treble {
     }
 }
 
-impl ScalarParameter<i8> for Treble {
+impl ScalarParameter for Treble {
     /// Get the treble settign as value
     fn get(&self) -> i8 {
         self.0
@@ -140,7 +139,7 @@ impl Bass {
     }
 }
 
-impl ScalarParameter<i8> for Bass {
+impl ScalarParameter for Bass {
     fn get(&self) -> i8 {
         self.0
     }
@@ -171,7 +170,7 @@ impl PlayPreset {
     }
 }
 
-impl ScalarParameter<i8> for PlayPreset {
+impl ScalarParameter for PlayPreset {
     fn get(&self) -> i8 {
         self.0
     }
