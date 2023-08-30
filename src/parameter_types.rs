@@ -298,42 +298,41 @@ impl SystemControl {
 
 /// Source selection for the device
 // TODO removed unused types
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Source {
     /// From the WiFi connection
     Net,
     /// From the USB port
     Usb,
-    /// From the USB Digital to Analogue converter
-    UsbDac,
-    /// From the first line-in analog port
-    LineIn,
-    ///Not used in the Up2Stream Pro
-    LineIn2,
     /// From bluetooth
     Bluetooth,
-    /// From the optical connection
-    Optical,
+    /// From the line-in/aux analog port
+    LineIn,
     /// From the ethernet connection
     Coax,
-    /// Not used in the Up2Stream Pro
-    I2S,
-    /// Not used in the Up2Stream Pro
-    Hdmi,
+    // The following are not used by the  Up2Stream Pro, but
+    // kept here for further expansion.
+    // UsbDac,
+    // LineIn2,
+    // Optical,
+    // I2S,
+    // Hdmi,
 }
 impl Source {
     pub fn to_parameter_str<'a>(&self, buf: &'a mut [u8]) -> &'a [u8] {
         let parameter = match self {
             Self::Net => "NET",
             Self::Usb => "USB",
-            Self::UsbDac => "USBDAC",
             Self::LineIn => "LINE-IN",
-            Self::LineIn2 => "LINE-IN2",
             Self::Bluetooth => "BT",
-            Self::Optical => "OPT",
             Self::Coax => "COAX",
-            Self::I2S => "I2S",
-            Self::Hdmi => "HDMI",
+            // The following are not used by the  Up2Stream Pro, but
+            // kept here for further expansion.
+            // Self::UsbDac => "USBDAC",
+            // Self::LineIn2 => "LINE-IN2",
+            // Self::Optical => "OPT",
+            // Self::I2S => "I2S",
+            // Self::Hdmi => "HDMI",
         };
 
         // Returned slice the same length as the parameter string
@@ -351,14 +350,14 @@ impl FromStr for Source {
         match source_str {
             "NET" => Ok(Source::Net),
             "USB" => Ok(Source::Usb),
-            "USBDAC" => Ok(Source::UsbDac),
             "LINE-IN" => Ok(Source::LineIn),
-            "LINE-IN2" => Ok(Source::LineIn2),
             "BT" => Ok(Source::Bluetooth),
-            "OPT" => Ok(Source::Optical),
             "COAX" => Ok(Source::Coax),
-            "I2S" => Ok(Source::I2S),
-            "HDMI" => Ok(Source::Hdmi),
+            // "USBDAC" => Ok(Source::UsbDac),
+            // "LINE-IN2" => Ok(Source::LineIn2),
+            // "OPT" => Ok(Source::Optical),
+            // "I2S" => Ok(Source::I2S),
+            // "HDMI" => Ok(Source::Hdmi),
             _ => Err(Error::SourceNotKnown), // "USB", "USBDAC", "LINE-IN", "LINE-IN2", "BT", "OPT", "COAX", "I2S", "HDMI",
         }
     }
@@ -805,14 +804,10 @@ mod test {
 
     #[test]
     fn source_from_string() {
-        const NUMBER_SOURCES: usize = 10;
-        let source_strings: [&str; NUMBER_SOURCES] = [
-            "NET", "USB", "USBDAC", "LINE-IN", "LINE-IN2", "BT", "OPT", "COAX", "I2S", "HDMI",
-        ];
+        const NUMBER_SOURCES: usize = 5;
+        let source_strings: [&str; NUMBER_SOURCES] = ["NET", "USB", "LINE-IN", "BT", "COAX"];
         use Source::*;
-        let expected_sources = ArrayVec::from([
-            Net, Usb, UsbDac, LineIn, LineIn2, Bluetooth, Optical, Coax, I2S, Hdmi,
-        ]);
+        let expected_sources = ArrayVec::from([Net, Usb, LineIn, Bluetooth, Coax]);
         let mut actual_sources = ArrayVec::<Source, NUMBER_SOURCES>::new();
 
         // let mut source: Source;
