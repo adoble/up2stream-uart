@@ -1,7 +1,25 @@
+// TODO
+// As the parameter-types file is getting large, put each type in a seperate file
+// - together with test code - and reexport from parameter-types.
+
 use core::str::FromStr;
 
 use crate::error::Error;
 
+/// Implements the base trait for parameters that represent
+/// a scalar. Required if the inner value of the parameter type is required.
+///
+/// # Example
+/// ```
+/// use up2stream_uart::{ScalarParameter, Volume};
+///
+/// let volume = Volume::new(23).unwrap();
+///
+/// let volume_value: i8 = volume.get();
+///
+/// assert_eq!(23, volume_value);
+///
+/// ```
 pub trait ScalarParameter {
     // Get the contained value
     fn get(&self) -> i8;
@@ -81,9 +99,12 @@ impl FromStr for Volume {
     }
 }
 
+/// Represents a treble value from -10 to +10.
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Treble(i8); //-10..10
 impl Treble {
+    /// Create a new treble value between -10 and 10.
+    /// If the range is outside of this then an [OutOfRange] error is returned.
     pub fn new(treble: i8) -> Result<Self, Error> {
         let range = -10..=10;
         if range.contains(&treble) {
@@ -113,12 +134,11 @@ impl FromStr for Treble {
     }
 }
 
-/// Represents a bass setting.
-/// Bass settings can be from -10 to 10.
+/// Represents a bass setting from -10 to 10.
 ///
 /// # Examples
-/// ```ignore
-/// use  up2stream_uart::Bass;
+/// ```no_run
+/// use  up2stream_uart::{Bass, ScalarParameter};
 ///
 /// let bass = Bass::new(5).unwrap();
 ///
@@ -157,6 +177,7 @@ impl FromStr for Bass {
     }
 }
 
+/// Represents a play preset setting from 0 to 10.
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct PlayPreset(i8); // 0..10
 impl PlayPreset {
@@ -188,8 +209,8 @@ impl FromStr for PlayPreset {
     }
 }
 
-///  A parameter that is used for on/off/toggle swiths in the UART API.
-///  If the state is either On or Off it can be converted to a boolean (true for On).
+///  A parameter that is used for on/off/toggle switch in the UART API.
+
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Switch {
     On,
@@ -198,6 +219,7 @@ pub enum Switch {
 }
 
 impl Switch {
+    ///  If the state is either On or Off it can be converted to a boolean (true for On).
     pub fn to_bool(&self) -> Result<bool, Error> {
         match self {
             Self::On => Ok(true),
@@ -243,11 +265,16 @@ impl FromStr for Switch {
     }
 }
 
+/// System control for the device
 pub enum SystemControl {
+    /// Reboot the device
     Reboot,
+    /// Enter standby
     Standby,
+    /// Factory reset
     Reset,
-    Recover,
+    // Recover all data. This is a version 4 command
+    //Recover,
 }
 
 impl SystemControl {
@@ -256,7 +283,7 @@ impl SystemControl {
             Self::Reboot => "REBOOT",
             Self::Standby => "STANDBY",
             Self::Reset => "RESET",
-            Self::Recover => "RECOVER",
+            //Self::Recover => "RECOVER",
         };
 
         buf[..parameter.len()].clone_from_slice(&parameter.as_bytes()[..parameter.len()]);
@@ -269,17 +296,29 @@ impl SystemControl {
     }
 }
 
+/// Source selection for the device
+// TODO removed unused types
 #[derive(Debug, PartialEq)]
 pub enum Source {
+    /// From the WiFi connection
     Net,
+    /// From the USB port
     Usb,
+    /// From the USB Digital to Analogue converter
     UsbDac,
+    /// From the first line-in analog port
     LineIn,
+    ///Not used in the Up2Stream Pro
     LineIn2,
+    /// From bluetooth
     Bluetooth,
+    /// From the optical connection
     Optical,
+    /// From the ethernet connection
     Coax,
+    /// Not used in the Up2Stream Pro
     I2S,
+    /// Not used in the Up2Stream Pro
     Hdmi,
 }
 impl Source {
@@ -325,6 +364,7 @@ impl FromStr for Source {
     }
 }
 
+/// A struct to represent the device status.
 #[derive(Debug, PartialEq)]
 pub struct DeviceStatus {
     pub source: Source,
@@ -339,29 +379,34 @@ pub struct DeviceStatus {
     pub upgrading: bool,
 }
 
+/// Current network playback state
 pub enum Playback {
     Playing,
     NotPlaying,
 }
 
+/// Left, Right channel or stereo.
 pub enum AudioChannel {
     Left,
     Right,
-    Silent, // ???
+    Stereo,
 }
 
+/// Sets the relationship of a device in a mult-room configuration
 pub enum MultiroomState {
     Slave,
     Master,
     None,
 }
 
+/// The onboard LED
 pub enum Led {
     On,
     Off,
     Toogle,
 }
 
+/// Loop mode for network playback
 pub enum LoopMode {
     RepeatAll,
     RepeatOne,
@@ -750,10 +795,12 @@ mod test {
             b"STANDBY"
         );
         assert_eq!(SystemControl::Reset.to_parameter_str(&mut buf), b"RESET");
-        assert_eq!(
-            SystemControl::Recover.to_parameter_str(&mut buf),
-            b"RECOVER"
-        );
+
+        // Device API version 4 functionality
+        // assert_eq!(
+        //     SystemControl::Recover.to_parameter_str(&mut buf),
+        //     b"RECOVER"
+        // );
     }
 
     #[test]

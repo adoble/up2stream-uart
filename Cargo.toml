@@ -5,6 +5,7 @@ version = "0.1.0"
 readme = "README.md"
 authors = ["Andrew Doble"]
 description = "A driver for the Arylic Up2Stream Pro using the UART port API."
+license = "MIT"
 
 [dependencies]
 embedded-hal = "0.2.6"

@@ -1,9 +1,4 @@
-//#[allow(warnings)]
-//use embedded_hal::blocking::serial::Write;
-
 use embedded_hal_mock::serial::{Mock as SerialMock, Transaction as SerialTransaction};
-//use embedded_hal_mock::serial::{Read, Write};
-//use embedded_hal_mock::MockError;
 
 use super::*;
 
@@ -206,12 +201,14 @@ fn system_control() {
         b"STANDBY"
     );
     buf = [0; 10];
-    assert_eq!(
-        SystemControl::Recover.to_parameter_str(&mut buf),
-        b"RECOVER"
-    );
-    buf = [0; 10];
     assert_eq!(SystemControl::Reset.to_parameter_str(&mut buf), b"RESET");
+
+    // Device API version 4 functionality
+    // buf = [0; 10];
+    // assert_eq!(
+    //     SystemControl::Recover.to_parameter_str(&mut buf),
+    //     b"RECOVER"
+    // );
 }
 
 #[test]
@@ -357,6 +354,42 @@ fn select_input_source() {
     serial.done();
 }
 
+// This is a runnable test of setting the volume one step lower. This forms the
+// example in the library documentation
+#[test]
+fn volume_doc_code_test() -> Result<(), Error> {
+    let initial_expectations = [
+        SerialTransaction::write(b';'),
+        SerialTransaction::write_many(b"VOL:50;"),
+        SerialTransaction::write_many(b"VOL;"),
+        SerialTransaction::flush(),
+        SerialTransaction::read_many(b"VOL:50;"),
+        SerialTransaction::write_many(b"VOL:49;"),
+        //SerialTransaction::flush(),
+    ];
+
+    let mut serial = SerialMock::new(&initial_expectations);
+
+    let mut up2stream_device = Up2Stream::new(&mut serial);
+
+    // Set the initial volume
+    let initial_vol = Volume::new(50)?;
+    up2stream_device.set_volume(initial_vol)?;
+
+    // Get the volume
+    let actual_volume = up2stream_device.volume()?.get();
+
+    // Reduce the volume by 1 step
+    if actual_volume > 0 {
+        let new_volume = Volume::new(actual_volume - 1)?;
+        up2stream_device.set_volume(new_volume)?;
+    }
+
+    serial.done();
+
+    Ok(())
+}
+
 #[test]
 fn volume() {
     let expectations = [
@@ -447,6 +480,46 @@ fn toogle_mute() {
     let mut up2stream_device = Up2Stream::new(&mut serial);
 
     let response = up2stream_device.set_mute(Switch::Toggle);
+
+    assert!(response.is_ok());
+
+    serial.done();
+}
+
+#[test]
+fn treble() {
+    let expectations = [
+        SerialTransaction::write(b';'),
+        SerialTransaction::write_many(b"TRE;"),
+        SerialTransaction::flush(),
+        SerialTransaction::read_many(b"TRE:-3;"),
+    ];
+
+    let mut serial = SerialMock::new(&expectations);
+
+    let mut up2stream_device = Up2Stream::new(&mut serial);
+
+    let response = up2stream_device.treble();
+
+    assert!(response.is_ok());
+
+    assert_eq!(response.unwrap(), Treble::new(-3).unwrap());
+
+    serial.done();
+}
+
+#[test]
+fn set_treble() {
+    let expectations = [
+        SerialTransaction::write(b';'),
+        SerialTransaction::write_many(b"TRE:-6;"),
+    ];
+
+    let mut serial = SerialMock::new(&expectations);
+
+    let mut up2stream_device = Up2Stream::new(&mut serial);
+
+    let response = up2stream_device.set_treble(Treble::new(-6).unwrap());
 
     assert!(response.is_ok());
 

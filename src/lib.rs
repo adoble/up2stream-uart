@@ -1,21 +1,77 @@
-//! A driver for the Arylic Up2Steam board. This only uses the UART interface.
+//! This crate provides a UART driver for the **Arylic Up2Steam Pro** board.
 //!
+//! It provides most of the functionality provided by the UART interface to the board.
+//!
+//! The public API is available as functions on the [Up2Stream] struct.
+//!
+//! The main driver is created using `up2stream_uart::Up2Stream::new` which accepts
+//! an UART peripheral that implements the `embedded_hal::serial::{Read, Write}` traits.
+//!
+//! Values are not set directly, but through the use of either enums or scalar types (such as [Volume] or [Bass])
+//! that provide range constraints on the values (for instance `Bass` can only accept values between -10 and +10 inclusive).
+//! If a value if out of range an error is returned. As such, type safety is ensured.
+//!
+//! # Example
+//!
+//! Gets the current volume and sets it to a lower level
+//! ```
+//! # use embedded_hal_mock::serial::{Mock as SerialMock, Transaction as SerialTransaction};
+//! use up2stream_uart::{Up2Stream, Volume, ScalarParameter, Error};
+//! # fn main() -> Result<(), up2stream_uart::Error> {
+//! # let initial_expectations = [
+//! # SerialTransaction::write(b';'),
+//! # SerialTransaction::write_many(b"VOL:50;"),
+//! # SerialTransaction::write_many(b"VOL;"),
+//! # SerialTransaction::flush(),
+//! # SerialTransaction::read_many(b"VOL:50;"),
+//! # SerialTransaction::write_many(b"VOL:49;"),
+//! # ];
+//!
+//! // Initialise a serial peripheral on your MCU that implements the traits
+//! // `embedded_hal::serial::{Read, Write}`. This is assigned
+//! // the variable `serial` in the code example
+//! # let mut serial = SerialMock::new(&initial_expectations);
+//!
+//! // Initialise the drive using the previously setup serial peripheral
+//! let mut up2stream_device = Up2Stream::new(&mut serial);
+//!
+//! // Set the initial volume
+//! let initial_vol = Volume::new(50)?;
+//! up2stream_device.set_volume(initial_vol)?;
+//!
+//! // Do some more processing ...
+//!
+//! // Get the volume from the device
+//! let actual_volume: i8 = up2stream_device.volume()?.get();
+//!
+//! // Reduce the volume by 1 step
+//! if actual_volume > 0 {
+//!     let new_volume = Volume::new(actual_volume - 1)?;
+//!     up2stream_device.set_volume(new_volume)?;
+//! }
+//!
+//! # serial.done();
+//! # Ok(())
+//! # }
+//! ```
+//! # Restrictions
+//! * Currently only covers version 3 of the API.
+//!
+//!
+//! # API description for the UART interface to the Up2Stream Pro.
+//! The Arylic API for the UART  can be downloaded [here](https://developer.arylic.com/download/api-info-4.xlsx).
+//!
+//! Configuration of the UART is 115200,8,N,1, no flow control. Source is [here](https://forum.arylic.com/t/latest-api-documents-and-uart-protocols/534/5).
+//!
+
+// TODO Complete the functions marked todo()!
+// TODO Provide some configuration for differences between firmware version 3 and 4
 
 //#![no_std]
 // DO not include the standard library, except when testing.
 #![cfg_attr(not(test), no_std)]
 //#![no_main]
 #![allow(dead_code)]
-
-// See API description:
-// https://docs.google.com/spreadsheets/d/1gOb4VBruyJgaBZJHClV6dEkoiwf5hkzE/edit?pli=1#gid=425762154
-
-// According to this https://github.com/Resinchem/Arylic-Amp-MQTT/blob/main/src/arylic_amp.ino
-// the commands are terminated with ';' and query responses are terminated with '\n'
-// This is confirmed here https://forum.arylic.com/t/latest-api-documents-and-uart-protocols/534/8
-
-// Baud is 115200,8,N,1, no flow control.
-// Source https://forum.arylic.com/t/latest-api-documents-and-uart-protocols/534/5
 
 use nb::block;
 
@@ -29,13 +85,16 @@ use arrayvec::{ArrayString, ArrayVec};
 mod error;
 mod parameter_types;
 
-use crate::error::Error;
+pub use crate::error::Error;
 
 // Re-exports of parameter types
 pub use crate::parameter_types::{
     AudioChannel, Bass, DeviceStatus, Led, LoopMode, MultiroomState, PlayPreset, Playback,
     ScalarParameter, Source, Switch, SystemControl, Treble, Volume,
 };
+
+// #[cfg(doctest)]
+// use embedded_hal_mock::serial::{Mock as SerialMock, Transaction as SerialTransaction};
 
 const MAX_SIZE_RESPONSE: usize = 1024;
 
@@ -72,6 +131,7 @@ const TERMINATOR: u8 = b';';
 const PARAMETER_START: u8 = b':';
 const PARAMETER_DELIMITER: u8 = b',';
 
+/// The UART driver for the Up2Stream Pro board.
 pub struct Up2Stream<'a, UART: Read<u8> + Write<u8>> {
     uart: &'a mut UART,
 
@@ -96,7 +156,16 @@ where
     }
 
     /// Get the device firmware version as a string in the form
-    /// {firmware}-{commit}-{api}
+    /// {firmware}-{commit}-{api}.
+    ///
+    /// ```no_run
+    /// use up2stream_uart::Up2Stream;
+    /// # use embedded_hal_mock::serial::{Mock as SerialMock, Transaction as SerialTransaction};
+    /// # let mut uart =   SerialMock::new(&[SerialTransaction::read(b';')]);
+    /// # let mut up2stream_driver =Up2Stream::new(&mut uart);
+    /// let firmware : &str = up2stream_driver.firmware_version().unwrap();
+    ///
+    /// ```
     pub fn firmware_version(&mut self) -> Result<&str, Error> {
         self.response = self
             //.send_query(COMMAND_VER)
@@ -108,6 +177,19 @@ where
         Ok(s)
     }
 
+    /// Get the device status as a [DeviceStatus] struct.
+    ///
+    /// For example:
+    ///
+    /// ```no_run
+    /// use up2stream_uart::Up2Stream;
+    /// # use embedded_hal_mock::serial::{Mock as SerialMock, Transaction as SerialTransaction};
+    /// # let mut uart =   SerialMock::new(&[SerialTransaction::read(b';')]);
+    /// # let mut up2stream_driver =Up2Stream::new(&mut uart);
+    /// let device_status = up2stream_driver.status().unwrap();
+    /// let source = device_status.source;
+    ///
+    /// ```
     pub fn status(&mut self) -> Result<DeviceStatus, Error> {
         // Response is local to this function as return a device status and not a string slice
         let response = self
@@ -133,6 +215,17 @@ where
         Ok(device_status)
     }
 
+    /// Reset, reboot or put into standby the device.
+    /// Use the parameter type [SystemControl] to decide what happens. For example, to reboot
+    /// the device:
+    /// ```no_run
+    /// use up2stream_uart::{Up2Stream, SystemControl};
+    /// # use embedded_hal_mock::serial::{Mock as SerialMock, Transaction as SerialTransaction};
+    /// # let mut uart =   SerialMock::new(&[SerialTransaction::read(b';')]);
+    /// # let mut up2stream_driver =Up2Stream::new(&mut uart);
+    /// let device_status = up2stream_driver.execute_system_control(SystemControl::Reboot).unwrap();
+    ///
+    /// ```
     pub fn execute_system_control(&mut self, control: SystemControl) -> Result<(), Error> {
         let mut buf = [0; 64];
 
@@ -141,6 +234,7 @@ where
         Ok(())
     }
 
+    /// Get the status of the internet connection
     pub fn internet_connection(&mut self) -> Result<bool, Error> {
         let response = self.send_query(COMMAND_WWW)?;
 
@@ -164,6 +258,16 @@ where
         Switch::from_str(response.as_str())?.to_bool()
     }
 
+    /// Set audio out. For instance:
+    ///
+    /// ```no_run
+    /// use up2stream_uart::Up2Stream;
+    /// # use embedded_hal_mock::serial::{Mock as SerialMock, Transaction as SerialTransaction};
+    /// # let mut uart =   SerialMock::new(&[SerialTransaction::read(b';')]);
+    /// # let mut up2stream_driver =Up2Stream::new(&mut uart);
+    /// up2stream_driver.set_audio_out(true).unwrap();
+    ///
+    /// ```
     pub fn set_audio_out(&mut self, enable: bool) -> Result<(), Error> {
         let switch = Switch::from(enable);
 
@@ -173,14 +277,18 @@ where
     }
 
     /// Get the current input source.
-    /// #Example
-    /// ```ignore
-    /// use up2stream_uart::Source;
     ///
-    /// let source: Source = driver.input_source().unwrap();
+    /// # Example
+    /// ```no_run
+    /// use up2stream_uart::{Up2Stream, Source};
+    /// # use embedded_hal_mock::serial::{Mock as SerialMock, Transaction as SerialTransaction};
+    /// # let mut uart =   SerialMock::new(&[SerialTransaction::read(b';')]);
+    /// # let mut up2stream_driver =Up2Stream::new(&mut uart);
+    ///
+    /// let source: Source = up2stream_driver.input_source().unwrap();
     /// match source {
-    /// Source::Bluetooth => todo!(),
-    /// _ => todo!(),
+    ///   Source::Bluetooth => todo!(),
+    ///    _ => todo!(),
     /// }
     /// ```
     pub fn input_source(&mut self) -> Result<Source, Error> {
@@ -193,8 +301,13 @@ where
     /// Select the input source.
     /// The source is constrained by the values in Source.
     /// #Example:
-    /// ```ignore
-    /// driver.select_input_source(Source::Bluetooth).unwrap();
+    /// ```no_run
+    /// use up2stream_uart::{Up2Stream, Source};
+    /// # use embedded_hal_mock::serial::{Mock as SerialMock, Transaction as SerialTransaction};
+    /// # let mut uart =   SerialMock::new(&[SerialTransaction::read(b';')]);
+    /// # let mut up2stream_driver =Up2Stream::new(&mut uart);
+    ///
+    /// up2stream_driver.select_input_source(Source::Bluetooth).unwrap();
     /// ```
     pub fn select_input_source(&mut self, source: Source) -> Result<(), Error> {
         let mut buf = [0; 20];
@@ -202,9 +315,13 @@ where
     }
 
     /// Get the current volume, e.g:
-    /// ```ignore
-    /// let volume: Volume = driver.volume().unwrap();
-    /// let vol_value: u8 = volume.get();
+    /// ```no_run
+    ///  use up2stream_uart::{Up2Stream, Volume, ScalarParameter};
+    ///  # use embedded_hal_mock::serial::{Mock as SerialMock, Transaction as SerialTransaction};
+    ///  # let mut uart =   SerialMock::new(&[SerialTransaction::read(b';')]);
+    ///  # let mut up2stream_driver =Up2Stream::new(&mut uart);
+    /// let volume = up2stream_driver.volume().unwrap();
+    /// let volume_value = volume.get();
     ///
     /// ```
     pub fn volume(&mut self) -> Result<Volume, Error> {
@@ -216,16 +333,20 @@ where
     }
 
     /// Set the volume, e.g,
-    /// ```ignore
+    /// ```no_run
+    /// use up2stream_uart::{Up2Stream, Volume, ScalarParameter};
+    ///  # use embedded_hal_mock::serial::{Mock as SerialMock, Transaction as SerialTransaction};
+    ///  # let mut uart =   SerialMock::new(&[SerialTransaction::read(b';')]);
+    ///  # let mut up2stream_driver =Up2Stream::new(&mut uart);
     /// let volume = Volume::new(52).unwrap();
-    /// driver.set_volume(volume).unwrap();
+    /// up2stream_driver.set_volume(volume).unwrap();
     /// ```
     pub fn set_volume(&mut self, volume: Volume) -> Result<(), Error> {
         let mut buf = [0; 3];
         self.send_command(COMMAND_VOL, volume.to_parameter_str(&mut buf))
     }
 
-    /// Get if the audio is muted or not. .
+    /// Get if the audio is muted or not.
     pub fn mute_status(&mut self) -> Result<bool, Error> {
         let response = self.send_query(COMMAND_MUT)?;
 
@@ -235,14 +356,24 @@ where
     }
 
     /// Mute or unmute the audio.
+    ///
     /// # Examples
+    ///
     /// To mute:
-    /// ```ignore
-    /// device.set_mute(Switch::On).unwrap();
+    /// ```no_run
+    /// use up2stream_uart::{Up2Stream, Switch};
+    ///  # use embedded_hal_mock::serial::{Mock as SerialMock, Transaction as SerialTransaction};
+    ///  # let mut uart =   SerialMock::new(&[SerialTransaction::read(b';')]);
+    ///  # let mut up2stream_driver =Up2Stream::new(&mut uart);
+    /// up2stream_driver.set_mute(Switch::On).unwrap();
     /// ```
     /// To toggle the mute status:
-    /// ```ignore
-    /// device.set_mute(Switch::Toggle).unwrap();
+    /// ```no_run
+    /// use up2stream_uart::{Up2Stream, Switch};
+    ///  # use embedded_hal_mock::serial::{Mock as SerialMock, Transaction as SerialTransaction};
+    ///  # let mut uart =   SerialMock::new(&[SerialTransaction::read(b';')]);
+    ///  # let mut up2stream_driver =Up2Stream::new(&mut uart);
+    /// up2stream_driver.set_mute(Switch::Toggle).unwrap();
     /// ```
     pub fn set_mute(&mut self, switch: Switch) -> Result<(), Error> {
         let mut buf = [0; 1];
@@ -250,8 +381,13 @@ where
     }
 
     /// Get the bass value, e.g.;
-    /// ```ignore
-    /// let bass: Bass = driver.bass().unwrap();
+    /// ```no_run
+    /// use up2stream_uart::{Up2Stream, Bass};
+    ///  # use embedded_hal_mock::serial::{Mock as SerialMock, Transaction as SerialTransaction};
+    ///  # let mut uart =   SerialMock::new(&[SerialTransaction::read(b';')]);
+    ///  # let mut up2stream_driver =Up2Stream::new(&mut uart);
+    /// let bass: Bass = up2stream_driver.bass().unwrap();
+    ///
     /// ```
     pub fn bass(&mut self) -> Result<Bass, Error> {
         let response = self.send_query(COMMAND_BAS)?;
@@ -261,17 +397,59 @@ where
         Ok(bass)
     }
 
+    /// Set the bass value. This uses the parameter type [Bass].
+    ///
+    /// # Example
+    /// ```no_run
+    /// use up2stream_uart::{Up2Stream, Bass};
+    ///  # use embedded_hal_mock::serial::{Mock as SerialMock, Transaction as SerialTransaction};
+    ///  # let mut uart =   SerialMock::new(&[SerialTransaction::read(b';')]);
+    ///  # let mut up2stream_driver =Up2Stream::new(&mut uart);
+    /// let bass = Bass::new(-6).unwrap();
+    /// up2stream_driver.set_bass(bass).unwrap();
+    ///
+    /// ```
     pub fn set_bass(&mut self, bass: Bass) -> Result<(), Error> {
         let mut buf = [0; 3];
         self.send_command(COMMAND_BAS, bass.to_parameter_str(&mut buf))
     }
 
+    /// Get the treble value.
+    ///
+    /// # Example
+    /// ```no_run
+    /// use up2stream_uart::{Up2Stream, Treble, ScalarParameter};
+    ///  # use embedded_hal_mock::serial::{Mock as SerialMock, Transaction as SerialTransaction};
+    ///  # let mut uart =   SerialMock::new(&[SerialTransaction::read(b';')]);
+    ///  # let mut up2stream_driver =Up2Stream::new(&mut uart);
+    ///
+    /// let treble = up2stream_driver.treble().unwrap();
+    /// let treble_value : i8 = treble.get();
+    ///
+    /// ```
     pub fn treble(&mut self) -> Result<Treble, Error> {
-        todo!();
+        let response = self.send_query(COMMAND_TRE)?;
+
+        let treble = Treble::from_str(response.as_str())?;
+
+        Ok(treble)
     }
 
-    pub fn set_treble(&mut self, _treble: Treble) -> Result<(), Error> {
-        todo!();
+    /// Set the treble value. This uses the parameter type [Treble].
+    ///
+    /// # Example
+    /// ```no_run
+    /// use up2stream_uart::{Up2Stream, Treble};
+    ///  # use embedded_hal_mock::serial::{Mock as SerialMock, Transaction as SerialTransaction};
+    ///  # let mut uart =   SerialMock::new(&[SerialTransaction::read(b';')]);
+    ///  # let mut up2stream_driver =Up2Stream::new(&mut uart);
+    /// let treble = Treble::new(-6).unwrap();
+    /// up2stream_driver.set_treble(treble).unwrap();
+    ///
+    /// ```
+    pub fn set_treble(&mut self, treble: Treble) -> Result<(), Error> {
+        let mut buf = [0; 3];
+        self.send_command(COMMAND_TRE, treble.to_parameter_str(&mut buf))
     }
 
     pub fn play_pause_toggle(&self) -> Result<(), Error> {
