@@ -469,13 +469,19 @@ where
     }
 
     pub fn stop(&self) -> Result<(), Error> {
+        // only available in NET/USB mode
+        // TODO add a check
         todo!()
     }
     pub fn next(&self) -> Result<(), Error> {
+        // only available in BT/NET/USB mode (*1)
+        // TODO add a check
         todo!()
     }
 
     pub fn previous(&self) -> Result<(), Error> {
+        // only available in BT/NET/USB mode (*1)
+        // TODO add a check
         todo!()
     }
     pub fn bluetooth_connected(&self) -> Result<bool, Error> {
