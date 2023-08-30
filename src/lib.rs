@@ -452,8 +452,20 @@ where
         self.send_command(COMMAND_TRE, treble.to_parameter_str(&mut buf))
     }
 
-    pub fn play_pause_toggle(&self) -> Result<(), Error> {
-        todo!()
+    /// Toggle between play and pause.
+    ///
+    /// # Example
+    /// ```no_run
+    ///  # use up2stream_uart::{Up2Stream};
+    ///  # use embedded_hal_mock::serial::{Mock as SerialMock, Transaction as SerialTransaction};
+    ///  # let mut uart =   SerialMock::new(&[SerialTransaction::read(b';')]);
+    ///  # let mut up2stream_driver =Up2Stream::new(&mut uart);
+    ///
+    ///  up2stream_driver.play_pause_toggle().unwrap();
+    ///
+    /// ```
+    pub fn play_pause_toggle(&mut self) -> Result<(), Error> {
+        self.send_command(COMMAND_POP, b"")
     }
 
     pub fn stop(&self) -> Result<(), Error> {

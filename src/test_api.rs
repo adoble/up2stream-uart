@@ -525,3 +525,21 @@ fn set_treble() {
 
     serial.done();
 }
+
+#[test]
+fn toogle_play_pause() {
+    let expectations = [
+        SerialTransaction::write(b';'),
+        SerialTransaction::write_many(b"POP;"),
+    ];
+
+    let mut serial = SerialMock::new(&expectations);
+
+    let mut up2stream_device = Up2Stream::new(&mut serial);
+
+    let response = up2stream_device.play_pause_toggle();
+
+    assert!(response.is_ok());
+
+    serial.done();
+}
