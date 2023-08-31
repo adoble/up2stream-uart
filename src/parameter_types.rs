@@ -104,7 +104,7 @@ impl FromStr for Volume {
 pub struct Treble(i8); //-10..10
 impl Treble {
     /// Create a new treble value between -10 and 10.
-    /// If the range is outside of this then an [OutOfRange] error is returned.
+    /// If the range is outside of this then an [Error::OutOfRange] error is returned.
     pub fn new(treble: i8) -> Result<Self, Error> {
         let range = -10..=10;
         if range.contains(&treble) {
