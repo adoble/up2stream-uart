@@ -468,10 +468,19 @@ where
         self.send_command(COMMAND_POP, b"")
     }
 
-    pub fn stop(&self) -> Result<(), Error> {
+    /// Stop playing.
+    ///
+    /// This is only availble for  Wifi or USB sources. If the source
+    /// has been set to something different then this will return the
+    /// error `Error::NotSupportedForDeviceSource`.
+    pub fn stop(&mut self) -> Result<(), Error> {
         // only available in NET/USB mode
-        // TODO add a check
-        todo!()
+        let source = self.input_source()?;
+
+        match source {
+            Source::Net | Source::Usb => self.send_command(COMMAND_STP, b""),
+            _ => Err(Error::NotSupportedForDeviceSource),
+        }
     }
     pub fn next(&self) -> Result<(), Error> {
         // only available in BT/NET/USB mode (*1)

@@ -543,3 +543,51 @@ fn toogle_play_pause() {
 
     serial.done();
 }
+
+#[test]
+fn stop() {
+    let expectations = [
+        SerialTransaction::write(b';'),
+        SerialTransaction::write_many(b"SRC;"),
+        SerialTransaction::flush(),
+        SerialTransaction::read_many(b"SRC:NET;"),
+        SerialTransaction::write_many(b"STP;"),
+    ];
+
+    let mut serial = SerialMock::new(&expectations);
+
+    let mut up2stream_device = Up2Stream::new(&mut serial);
+
+    let response = up2stream_device.stop();
+
+    assert!(response.is_ok());
+
+    serial.done();
+}
+
+#[test]
+fn stop_err() {
+    let expectations = [
+        SerialTransaction::write(b';'),
+        SerialTransaction::write_many(b"SRC;"),
+        SerialTransaction::flush(),
+        SerialTransaction::read_many(b"SRC:BT;"),
+    ];
+
+    let mut serial = SerialMock::new(&expectations);
+
+    let mut up2stream_device = Up2Stream::new(&mut serial);
+
+    let response = up2stream_device.stop();
+
+    if let Err(e) = response {
+        match e {
+            Error::NotSupportedForDeviceSource => assert!(true),
+            _ => assert!(false, "Incorrect error message"),
+        }
+    } else {
+        assert!(false, "Error expected");
+    };
+
+    serial.done();
+}
