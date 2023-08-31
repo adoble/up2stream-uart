@@ -470,11 +470,10 @@ where
 
     /// Stop playing.
     ///
-    /// This is only availble for  Wifi or USB sources. If the source
+    /// This is only available for Wifi or USB sources. If the source
     /// has been set to something different then this will return the
     /// error `Error::NotSupportedForDeviceSource`.
     pub fn stop(&mut self) -> Result<(), Error> {
-        // only available in NET/USB mode
         let source = self.input_source()?;
 
         match source {
@@ -482,16 +481,33 @@ where
             _ => Err(Error::NotSupportedForDeviceSource),
         }
     }
-    pub fn next(&self) -> Result<(), Error> {
-        // only available in BT/NET/USB mode (*1)
-        // TODO add a check
-        todo!()
+
+    /// Play next track.
+    ///
+    /// This is only available for Bluetooth, Wifi or USB sources. If the source
+    /// has been set to something different then this will return the
+    /// error `Error::NotSupportedForDeviceSource`.
+    pub fn next(&mut self) -> Result<(), Error> {
+        let source = self.input_source()?;
+
+        match source {
+            Source::Bluetooth | Source::Net | Source::Usb => self.send_command(COMMAND_NXT, b""),
+            _ => Err(Error::NotSupportedForDeviceSource),
+        }
     }
 
-    pub fn previous(&self) -> Result<(), Error> {
-        // only available in BT/NET/USB mode (*1)
-        // TODO add a check
-        todo!()
+    /// Play previous track.
+    ///
+    /// This is only available for Bluetooth, Wifi or USB sources. If the source
+    /// has been set to something different then this will return the
+    /// error `Error::NotSupportedForDeviceSource`.
+    pub fn previous(&mut self) -> Result<(), Error> {
+        let source = self.input_source()?;
+
+        match source {
+            Source::Bluetooth | Source::Net | Source::Usb => self.send_command(COMMAND_PRE, b""),
+            _ => Err(Error::NotSupportedForDeviceSource),
+        }
     }
     pub fn bluetooth_connected(&self) -> Result<bool, Error> {
         todo!()

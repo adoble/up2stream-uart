@@ -591,3 +591,72 @@ fn stop_err() {
 
     serial.done();
 }
+
+#[test]
+fn next() {
+    let expectations = [
+        SerialTransaction::write(b';'),
+        SerialTransaction::write_many(b"SRC;"),
+        SerialTransaction::flush(),
+        SerialTransaction::read_many(b"SRC:BT;"),
+        SerialTransaction::write_many(b"NXT;"),
+    ];
+
+    let mut serial = SerialMock::new(&expectations);
+
+    let mut up2stream_device = Up2Stream::new(&mut serial);
+
+    let response = up2stream_device.next();
+
+    assert!(response.is_ok());
+
+    serial.done();
+}
+
+#[test]
+fn next_err() {
+    let expectations = [
+        SerialTransaction::write(b';'),
+        SerialTransaction::write_many(b"SRC;"),
+        SerialTransaction::flush(),
+        SerialTransaction::read_many(b"SRC:COAX;"),
+    ];
+
+    let mut serial = SerialMock::new(&expectations);
+
+    let mut up2stream_device = Up2Stream::new(&mut serial);
+
+    let response = up2stream_device.next();
+
+    if let Err(e) = response {
+        match e {
+            Error::NotSupportedForDeviceSource => assert!(true),
+            _ => assert!(false, "Incorrect error message"),
+        }
+    } else {
+        assert!(false, "Error expected");
+    };
+
+    serial.done();
+}
+
+#[test]
+fn previous() {
+    let expectations = [
+        SerialTransaction::write(b';'),
+        SerialTransaction::write_many(b"SRC;"),
+        SerialTransaction::flush(),
+        SerialTransaction::read_many(b"SRC:BT;"),
+        SerialTransaction::write_many(b"PRE;"),
+    ];
+
+    let mut serial = SerialMock::new(&expectations);
+
+    let mut up2stream_device = Up2Stream::new(&mut serial);
+
+    let response = up2stream_device.previous();
+
+    assert!(response.is_ok());
+
+    serial.done();
+}
