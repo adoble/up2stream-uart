@@ -660,3 +660,26 @@ fn previous() {
 
     serial.done();
 }
+
+#[test]
+fn bluetooth_connected() {
+    let expectations = [
+        SerialTransaction::write(b';'),
+        SerialTransaction::write_many(b"SRC;"),
+        SerialTransaction::flush(),
+        SerialTransaction::read_many(b"SRC:BT;"),
+        SerialTransaction::write_many(b"BTC;"),
+        SerialTransaction::flush(),
+        SerialTransaction::read_many(b"BTC:1;"),
+    ];
+
+    let mut serial = SerialMock::new(&expectations);
+
+    let mut up2stream_device = Up2Stream::new(&mut serial);
+
+    let connected_status = up2stream_device.bluetooth_connected().unwrap();
+
+    assert!(connected_status);
+
+    serial.done();
+}

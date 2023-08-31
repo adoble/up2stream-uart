@@ -509,9 +509,26 @@ where
             _ => Err(Error::NotSupportedForDeviceSource),
         }
     }
-    pub fn bluetooth_connected(&self) -> Result<bool, Error> {
-        todo!()
+
+    /// Get current bluetooth connection state
+    ///
+    /// This is only available for Bluetooth sources. If the source
+    /// has been set to something different then this will return the
+    /// error `Error::NotSupportedForDeviceSource`.
+    pub fn bluetooth_connected(&mut self) -> Result<bool, Error> {
+        let source = self.input_source()?;
+
+        if source != Source::Bluetooth {
+            return Err(Error::NotSupportedForDeviceSource);
+        };
+
+        let response = self.send_query(COMMAND_BTC)?;
+
+        let status = Switch::from_str(response.as_str())?;
+
+        status.to_bool()
     }
+
     pub fn connect_bluetooth(&self) -> Result<(), Error> {
         todo!()
     }
