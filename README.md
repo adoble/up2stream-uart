@@ -1,4 +1,4 @@
-![dev-version](https://img.shields.io/badge/dev_version-0.1.0-orange)
+![dev-version](https://img.shields.io/badge/dev_version-0.1.2-orange)
 ![build](https://github.com/adoble/up2stream-uart/actions/workflows/ci_checks.yml/badge.svg)
 
 
@@ -7,20 +7,21 @@
 
 This crate provides a UART driver for the **Arylic Up2Steam Pro** board.
 
-It provides most of the functionality provided by the UART interface to the board.
+It provides a subset of the functionality provided by the UART interface to the board.
 
-The public API is available as functions on the [Up2Stream] struct.
+The public API is available as functions exposed by the [Up2Stream] struct.
 
 The main driver is created using `up2stream_uart::Up2Stream::new` which accepts
-an UART peripheral that implements the `embedded_hal::serial::{Read, Write}` traits.
+an UART peripheral that implements the `embedded_hal::serial::{Read, Write}` traits. Tne UART
+connection is configured as `115200,8,N,1` with no flow control
 
 Values are not set directly, but through the use of either enums or scalar types (such as [Volume] or [Bass])
 that provide range constraints on the values (for instance `Bass` can only accept values between -10 and +10 inclusive).
-If a value if out of range an error is returned. As such, type safety is ensured.
+If a value is out of range an error is returned. As such, type safety is ensured.
 
 ## Example
 
-Gets the current volume and sets it to a lower level
+Gets the current volume and sets it to a lower level.
 ```rust
 use up2stream_uart::{Up2Stream, Volume, ScalarParameter, Error};
 
@@ -48,13 +49,11 @@ if actual_volume > 0 {
 
 ```
 ## Restrictions
-* Currently only covers version 3 of the API.
+Currently only covers a subset of the UART API version 3.
 
 
 ## API description for the UART interface to the Up2Stream Pro.
 The Arylic API for the UART  can be downloaded [here](https://developer.arylic.com/download/api-info-4.xlsx).
-
-Configuration of the UART is 115200,8,N,1, no flow control. Source is [here](https://forum.arylic.com/t/latest-api-documents-and-uart-protocols/534/5).
 
 
 

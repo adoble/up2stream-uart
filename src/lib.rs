@@ -1,19 +1,20 @@
 //! This crate provides a UART driver for the **Arylic Up2Steam Pro** board.
 //!
-//! It provides most of the functionality provided by the UART interface to the board.
+//! It provides a subset of the functionality provided by the UART interface to the board.
 //!
-//! The public API is available as functions on the [Up2Stream] struct.
+//! The public API is available as functions exposed by the [Up2Stream] struct.
 //!
 //! The main driver is created using `up2stream_uart::Up2Stream::new` which accepts
-//! an UART peripheral that implements the `embedded_hal::serial::{Read, Write}` traits.
+//! an UART peripheral that implements the `embedded_hal::serial::{Read, Write}` traits. Tne UART
+//! connection is configured as `115200,8,N,1` with no flow control
 //!
 //! Values are not set directly, but through the use of either enums or scalar types (such as [Volume] or [Bass])
 //! that provide range constraints on the values (for instance `Bass` can only accept values between -10 and +10 inclusive).
-//! If a value if out of range an error is returned. As such, type safety is ensured.
+//! If a value is out of range an error is returned. As such, type safety is ensured.
 //!
 //! # Example
 //!
-//! Gets the current volume and sets it to a lower level
+//! Gets the current volume and sets it to a lower level.
 //! ```
 //! # use embedded_hal_mock::serial::{Mock as SerialMock, Transaction as SerialTransaction};
 //! use up2stream_uart::{Up2Stream, Volume, ScalarParameter, Error};
@@ -55,13 +56,11 @@
 //! # }
 //! ```
 //! # Restrictions
-//! * Currently only covers version 3 of the API.
+//! Currently only covers a subset of the UART API version 3.
 //!
 //!
 //! # API description for the UART interface to the Up2Stream Pro.
 //! The Arylic API for the UART  can be downloaded [here](https://developer.arylic.com/download/api-info-4.xlsx).
-//!
-//! Configuration of the UART is 115200,8,N,1, no flow control. Source is [here](https://forum.arylic.com/t/latest-api-documents-and-uart-protocols/534/5).
 //!
 
 // TODO Complete the functions marked todo()!
@@ -87,7 +86,7 @@ mod parameter_types;
 
 pub use crate::error::Error;
 
-// Re-exports of parameter types
+/// Re-exports of parameter types
 pub use crate::parameter_types::{
     AudioChannel, Bass, DeviceStatus, Led, LoopMode, MultiroomState, PlayPreset, Playback,
     ScalarParameter, Source, Switch, SystemControl, Treble, Volume,
@@ -131,7 +130,7 @@ const TERMINATOR: u8 = b';';
 const PARAMETER_START: u8 = b':';
 const PARAMETER_DELIMITER: u8 = b',';
 
-/// The UART driver for the Up2Stream Pro board.
+/// The UART driver for the **Arylic Up2Stream Pro** board.
 pub struct Up2Stream<'a, UART: Read<u8> + Write<u8>> {
     uart: &'a mut UART,
 
@@ -142,7 +141,7 @@ impl<'a, UART> Up2Stream<'a, UART>
 where
     UART: Write<u8> + Read<u8>,
 {
-    /// Create a new Up2Stream driver from an object that inplements the read and write traits.
+    /// Create a new Up2Stream driver from an UART object that implements the `Read` and `Write` traits.
     pub fn new(uart: &mut UART) -> Up2Stream<UART> {
         // This seems to be required by the device before usage.
         // It can fail, but the uart channel is then usable
@@ -151,7 +150,6 @@ where
         Up2Stream {
             uart,
             response: ArrayString::<MAX_SIZE_RESPONSE>::new(),
-            //rx_buffer: &mut [0; MAX_SIZE_RESPONSE],
         }
     }
 
@@ -247,7 +245,7 @@ where
         internet_connection_status.to_bool()
     }
 
-    /// Get if audio out has been enabled.
+    /// Get if audio output has been enabled.
     pub fn audio_out(&mut self) -> Result<bool, Error> {
         let response = self.send_query(COMMAND_AUD)?;
 
@@ -258,13 +256,14 @@ where
         Switch::from_str(response.as_str())?.to_bool()
     }
 
-    /// Set audio out. For instance:
+    /// Enable or disable audio output. For instance:
     ///
     /// ```no_run
     /// use up2stream_uart::Up2Stream;
     /// # use embedded_hal_mock::serial::{Mock as SerialMock, Transaction as SerialTransaction};
     /// # let mut uart =   SerialMock::new(&[SerialTransaction::read(b';')]);
     /// # let mut up2stream_driver =Up2Stream::new(&mut uart);
+    /// // Enable audio output
     /// up2stream_driver.set_audio_out(true).unwrap();
     ///
     /// ```
@@ -300,6 +299,7 @@ where
 
     /// Select the input source.
     /// The source is constrained by the values in Source.
+    ///
     /// #Example:
     /// ```no_run
     /// use up2stream_uart::{Up2Stream, Source};
@@ -314,14 +314,17 @@ where
         self.send_command(COMMAND_SRC, source.to_parameter_str(&mut buf))
     }
 
-    /// Get the current volume, e.g:
+    /// Get the current volume
+    ///
+    /// # Example
     /// ```no_run
     ///  use up2stream_uart::{Up2Stream, Volume, ScalarParameter};
     ///  # use embedded_hal_mock::serial::{Mock as SerialMock, Transaction as SerialTransaction};
     ///  # let mut uart =   SerialMock::new(&[SerialTransaction::read(b';')]);
     ///  # let mut up2stream_driver =Up2Stream::new(&mut uart);
     /// let volume = up2stream_driver.volume().unwrap();
-    /// let volume_value = volume.get();
+    /// // Now get the value of the volume
+    /// let volume_value: i8 = volume.get();
     ///
     /// ```
     pub fn volume(&mut self) -> Result<Volume, Error> {
@@ -332,7 +335,11 @@ where
         Ok(volume)
     }
 
-    /// Set the volume, e.g,
+    /// Set the volume.
+    ///
+    /// This uses the parameter type [Volume].
+    ///
+    /// # Example
     /// ```no_run
     /// use up2stream_uart::{Up2Stream, Volume, ScalarParameter};
     ///  # use embedded_hal_mock::serial::{Mock as SerialMock, Transaction as SerialTransaction};
@@ -482,12 +489,12 @@ where
         }
     }
 
-    /// Play next track.
+    /// Play the next track.
     ///
     /// This is only available for Bluetooth, Wifi or USB sources. If the source
     /// has been set to something different then this will return the
     /// error `Error::NotSupportedForDeviceSource`.
-    pub fn next(&mut self) -> Result<(), Error> {
+    pub fn next_track(&mut self) -> Result<(), Error> {
         let source = self.input_source()?;
 
         match source {
@@ -496,12 +503,14 @@ where
         }
     }
 
-    /// Play previous track.
+    /// Play the previous track.
+    ///
+    /// If the track has been playing for some time then this will replay the same track.
     ///
     /// This is only available for Bluetooth, Wifi or USB sources. If the source
     /// has been set to something different then this will return the
     /// error `Error::NotSupportedForDeviceSource`.
-    pub fn previous(&mut self) -> Result<(), Error> {
+    pub fn previous_track(&mut self) -> Result<(), Error> {
         let source = self.input_source()?;
 
         match source {
@@ -565,71 +574,91 @@ where
         self.send_command(COMMAND_BTC, disconnect.to_parameter_str(&mut buf))
     }
 
-    pub fn playback_status(&self) -> Result<Playback, Error> {
+    #[doc(hidden)]
+    pub fn playback_status(&mut self) -> Result<Playback, Error> {
         todo!()
     }
-    pub fn audio_channel(&self) -> Result<AudioChannel, Error> {
+    #[doc(hidden)]
+    pub fn audio_channel(&mut self) -> Result<AudioChannel, Error> {
         todo!()
     }
-    pub fn multiroom_state(&self) -> Result<MultiroomState, Error> {
+    #[doc(hidden)]
+    pub fn multiroom_state(&mut self) -> Result<MultiroomState, Error> {
         todo!()
     }
+    #[doc(hidden)]
     pub fn set_multiroom_state(&mut self, _state: MultiroomState) -> Result<(), Error> {
         todo!();
     }
-    pub fn led(&self) -> Result<Led, Error> {
+    #[doc(hidden)]
+    pub fn led(&mut self) -> Result<Led, Error> {
         todo!()
     }
+    #[doc(hidden)]
     pub fn set_led(&mut self, _led_status: Led) -> Result<(), Error> {
         todo!();
     }
-    pub fn beep(&self) -> Result<bool, Error> {
+    #[doc(hidden)]
+    pub fn beep(&mut self) -> Result<bool, Error> {
         todo!();
     }
 
-    pub fn set_beep(&self, _beep: bool) -> Result<(), Error> {
+    #[doc(hidden)]
+    pub fn set_beep(&mut self, _beep: bool) -> Result<(), Error> {
         todo!()
     }
 
-    pub fn set_play_preset(&self, _preset: PlayPreset) -> Result<(), Error> {
+    #[doc(hidden)]
+    pub fn set_play_preset(&mut self, _preset: PlayPreset) -> Result<(), Error> {
         todo!();
     }
-    pub fn virtual_bass(&self) -> Result<bool, Error> {
-        todo!();
-    }
-
-    pub fn enable_virtual_bass(&self) -> Result<(), Error> {
-        todo!();
-    }
-
-    pub fn disable_virtual_bass(&self) -> Result<(), Error> {
+    #[doc(hidden)]
+    pub fn virtual_bass(&mut self) -> Result<bool, Error> {
         todo!();
     }
 
-    pub fn toggle_virtual_bass(&self) -> Result<(), Error> {
-        todo!();
-    }
-    pub fn reset_wifi(&self) -> Result<(), Error> {
-        todo!();
-    }
-    pub fn loop_mode(&self) -> Result<LoopMode, Error> {
-        todo!();
-    }
-    pub fn set_loop_mode(&self, _loop_mode: LoopMode) -> Result<(), Error> {
-        todo!();
-    }
-    pub fn device_name(&self) -> Result<&str, Error> {
+    #[doc(hidden)]
+    pub fn enable_virtual_bass(&mut self) -> Result<(), Error> {
         todo!();
     }
 
-    pub fn set_device_name(&self, _device_name: &str) -> Result<LoopMode, Error> {
-        todo!();
-    }
-    pub fn enternet_connection(&self) -> Result<bool, Error> {
+    #[doc(hidden)]
+    pub fn disable_virtual_bass(&mut self) -> Result<(), Error> {
         todo!();
     }
 
-    pub fn wifi_connection(&self) -> Result<bool, Error> {
+    #[doc(hidden)]
+    pub fn toggle_virtual_bass(&mut self) -> Result<(), Error> {
+        todo!();
+    }
+    #[doc(hidden)]
+    pub fn reset_wifi(&mut self) -> Result<(), Error> {
+        todo!();
+    }
+    #[doc(hidden)]
+    pub fn loop_mode(&mut self) -> Result<LoopMode, Error> {
+        todo!();
+    }
+    #[doc(hidden)]
+    pub fn set_loop_mode(&mut self, _loop_mode: LoopMode) -> Result<(), Error> {
+        todo!();
+    }
+    #[doc(hidden)]
+    pub fn device_name(&mut self) -> Result<&str, Error> {
+        todo!();
+    }
+
+    #[doc(hidden)]
+    pub fn set_device_name(&mut self, _device_name: &str) -> Result<LoopMode, Error> {
+        todo!();
+    }
+    #[doc(hidden)]
+    pub fn enternet_connection(&mut self) -> Result<bool, Error> {
+        todo!();
+    }
+
+    #[doc(hidden)]
+    pub fn wifi_connection(&mut self) -> Result<bool, Error> {
         todo!();
     }
 
@@ -638,13 +667,10 @@ where
     // Send a command with any specified parameters.
     // Commands are send as bytes with the following syntax (BNF)
     //
-    //    <COMMAND> = <COMMAND_NAME> ";" | <COMMAND_NAME> ":" <PARAMETER> ";"
+    //    <command> = <command_name> ";" | <command_name> ":" <parameter> <terminator>
+    //    <command> ::= <alphanumeric> | <command>
+    //    <terminator> ::= ";"
     fn send_command(&mut self, command: &str, parameter: &[u8]) -> Result<(), Error> {
-        // First write a terminator character. This resets the channel.
-        // self.uart
-        //     .write(TERMINATOR)
-        //     .map_err(|_| Error::SendCommand)?;
-
         // Now send the command characters
         for c in command.chars() {
             self.uart.write(c as u8).map_err(|_| Error::SendCommand)?;
@@ -669,35 +695,28 @@ where
     }
 
     // Send a query and read the response. Queries are sent with the following syntax (BNF):
-    //   <query> ::= <command> <terminator>
-    //   <command> ::= <alphanumeric> | <command>
+    //   <query> ::= <command_name> <terminator>
+    //   <command_name> ::= <alphanumeric> | <command>
     //   <terminator> ::= ";"
     //
     // The response has the following syntax:
-    //  <response> ::= <command> <parameter_start> <parameter_list> <terminator>
+    //  <response> ::= <command_name> <parameter_start> <parameter_list> <terminator>
     //  <parameter_list> ::= <parameter> <parameter_delimiter> <parameter_list> | <parameter>
     //  <parameter_start> = ":"
     //  <parameter_delimiter> ::= ","
     //
     // In reality, a response  can be other characters due to framing issues, start up messages etc. so the "real"
     // response grammmer looks like:
-    //  <response> ::= <noise> <command> <parameter_start> <parameter_list> <terminator> <noise> <EOR>
+    //  <response> ::= <noise> <command_name> <parameter_start> <parameter_list> <terminator>
     //  <parameter_list> ::= <parameter> <parameter_delimiter> <parameter_list> | <parameter>
     //  <noise >::= <control_character> | <character> | <noise>
     //  <control_char> ::=   "\n" | "\r"
     //  <character> is any printable character
-    //  <EOR> is the end of record as indicated with a blocking read.
     //
     fn send_query(&mut self, command: &str) -> Result<ArrayString<MAX_SIZE_RESPONSE>, Error> {
         const MAX_NUMBER_RESENDS: u8 = 3;
 
         let mut query_response = ArrayString::<MAX_SIZE_RESPONSE>::new();
-
-        // First write a terminator character. This resets the channel.
-        // TODO do we still need to do this?
-        // self.uart
-        //     .write(TERMINATOR)
-        //     .map_err(|_| Error::SendCommand)?;
 
         // Send  the command characters
         for c in command.chars() {

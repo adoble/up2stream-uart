@@ -606,7 +606,7 @@ fn next() {
 
     let mut up2stream_device = Up2Stream::new(&mut serial);
 
-    let response = up2stream_device.next();
+    let response = up2stream_device.next_track();
 
     assert!(response.is_ok());
 
@@ -626,7 +626,7 @@ fn next_err() {
 
     let mut up2stream_device = Up2Stream::new(&mut serial);
 
-    let response = up2stream_device.next();
+    let response = up2stream_device.next_track();
 
     if let Err(e) = response {
         match e {
@@ -654,7 +654,7 @@ fn previous() {
 
     let mut up2stream_device = Up2Stream::new(&mut serial);
 
-    let response = up2stream_device.previous();
+    let response = up2stream_device.previous_track();
 
     assert!(response.is_ok());
 
