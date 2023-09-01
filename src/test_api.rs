@@ -683,3 +683,41 @@ fn bluetooth_connected() {
 
     serial.done();
 }
+
+#[test]
+fn connect_bluetooth() {
+    let expectations = [
+        SerialTransaction::write(b';'),
+        SerialTransaction::write_many(b"SRC;"),
+        SerialTransaction::flush(),
+        SerialTransaction::read_many(b"SRC:BT;"),
+        SerialTransaction::write_many(b"BTC:1;"),
+    ];
+
+    let mut serial = SerialMock::new(&expectations);
+
+    let mut up2stream_device = Up2Stream::new(&mut serial);
+
+    up2stream_device.connect_bluetooth().unwrap();
+
+    serial.done();
+}
+
+#[test]
+fn disconnect_bluetooth() {
+    let expectations = [
+        SerialTransaction::write(b';'),
+        SerialTransaction::write_many(b"SRC;"),
+        SerialTransaction::flush(),
+        SerialTransaction::read_many(b"SRC:BT;"),
+        SerialTransaction::write_many(b"BTC:0;"),
+    ];
+
+    let mut serial = SerialMock::new(&expectations);
+
+    let mut up2stream_device = Up2Stream::new(&mut serial);
+
+    up2stream_device.disconnect_bluetooth().unwrap();
+
+    serial.done();
+}

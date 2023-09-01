@@ -529,12 +529,42 @@ where
         status.to_bool()
     }
 
-    pub fn connect_bluetooth(&self) -> Result<(), Error> {
-        todo!()
+    /// Reconnect the current bluetooth device
+    ///
+    /// This is only available for Bluetooth sources. If the source
+    /// has been set to something different then this will return the
+    /// error `Error::NotSupportedForDeviceSource`.
+    pub fn connect_bluetooth(&mut self) -> Result<(), Error> {
+        let source = self.input_source()?;
+
+        if source != Source::Bluetooth {
+            return Err(Error::NotSupportedForDeviceSource);
+        };
+
+        let reconnect = Switch::On;
+
+        let mut buf = [0; 1];
+        self.send_command(COMMAND_BTC, reconnect.to_parameter_str(&mut buf))
     }
-    pub fn disconnect_bluetooth(&self) -> Result<(), Error> {
-        todo!()
+
+    /// Disconnect the current bluetooth device
+    ///
+    /// This is only available for Bluetooth sources. If the source
+    /// has been set to something different then this will return the
+    /// error `Error::NotSupportedForDeviceSource`.
+    pub fn disconnect_bluetooth(&mut self) -> Result<(), Error> {
+        let source = self.input_source()?;
+
+        if source != Source::Bluetooth {
+            return Err(Error::NotSupportedForDeviceSource);
+        };
+
+        let disconnect = Switch::Off;
+
+        let mut buf = [0; 1];
+        self.send_command(COMMAND_BTC, disconnect.to_parameter_str(&mut buf))
     }
+
     pub fn playback_status(&self) -> Result<Playback, Error> {
         todo!()
     }
