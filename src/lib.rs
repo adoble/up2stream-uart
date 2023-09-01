@@ -494,7 +494,7 @@ where
     /// This is only available for Bluetooth, Wifi or USB sources. If the source
     /// has been set to something different then this will return the
     /// error `Error::NotSupportedForDeviceSource`.
-    pub fn next(&mut self) -> Result<(), Error> {
+    pub fn next_track(&mut self) -> Result<(), Error> {
         let source = self.input_source()?;
 
         match source {
@@ -510,7 +510,7 @@ where
     /// This is only available for Bluetooth, Wifi or USB sources. If the source
     /// has been set to something different then this will return the
     /// error `Error::NotSupportedForDeviceSource`.
-    pub fn previous(&mut self) -> Result<(), Error> {
+    pub fn previous_track(&mut self) -> Result<(), Error> {
         let source = self.input_source()?;
 
         match source {
