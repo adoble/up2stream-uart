@@ -70,6 +70,9 @@ pub trait ScalarParameter {
 pub struct Volume(i8);
 
 impl Volume {
+    /// Create a new volume value between 0 and 100.
+    ///
+    /// If the range is outside of this then an [Error::OutOfRange] error is returned.
     pub fn new(volume: i8) -> Result<Volume, Error> {
         let range = 0..=100;
         if range.contains(&volume) {
@@ -104,6 +107,7 @@ impl FromStr for Volume {
 pub struct Treble(i8); //-10..10
 impl Treble {
     /// Create a new treble value between -10 and 10.
+    ///
     /// If the range is outside of this then an [Error::OutOfRange] error is returned.
     pub fn new(treble: i8) -> Result<Self, Error> {
         let range = -10..=10;
@@ -366,15 +370,25 @@ impl FromStr for Source {
 /// A struct to represent the device status.
 #[derive(Debug, PartialEq)]
 pub struct DeviceStatus {
+    /// The current input source
     pub source: Source,
+    /// If the device is muted
     pub mute: bool,
+    /// The current volume
     pub volume: Volume,
+    /// The current setting for the treble filter
     pub treble: Treble,
+    /// The current setting for the bass filter
     pub bass: Bass,
+    /// If the device is connected to Wifi
     pub net: bool,
+    /// If the device is physically connected to internet
     pub internet: bool,
+    /// If the device is playing
     pub playing: bool,
+    /// If the LEDs are enabled
     pub led: bool,
+    /// If the device is currently upgrading it's firmware
     pub upgrading: bool,
 }
 
