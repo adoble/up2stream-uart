@@ -1,4 +1,4 @@
-![dev-version](https://img.shields.io/badge/dev_version-0.1.2-orange)
+![dev-version](https://img.shields.io/badge/dev_version-0.2.0-orange)
 ![build](https://github.com/adoble/up2stream-uart/actions/workflows/ci_checks.yml/badge.svg)
 
 
