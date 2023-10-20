@@ -1,11 +1,12 @@
 [package]
 edition = "2021"
 name = "up2stream-uart"
-version = "0.1.2"
+version = "0.2.0"
 readme = "README.md"
 authors = ["Andrew Doble"]
 description = "A driver for the Arylic Up2Stream Pro using the UART port API."
 license = "MIT"
+categories = ["embedded", "multimedia::audio", "no-std"]
 
 [dependencies]
 embedded-hal = "0.2.6"

@@ -131,18 +131,20 @@ const PARAMETER_START: u8 = b':';
 const PARAMETER_DELIMITER: u8 = b',';
 
 /// The UART driver for the **Arylic Up2Stream Pro** board.
-pub struct Up2Stream<'a, UART: Read<u8> + Write<u8>> {
-    uart: &'a mut UART,
+//pub struct Up2Stream<'a, UART: Read<u8> + Write<u8>> {
+pub struct Up2Stream<UART: Read<u8> + Write<u8>> {
+    uart: UART,
 
     response: ArrayString<MAX_SIZE_RESPONSE>,
 }
 
-impl<'a, UART> Up2Stream<'a, UART>
+//impl<'a, UART> Up2Stream<'a, UART>
+impl<UART> Up2Stream<UART>
 where
     UART: Write<u8> + Read<u8>,
 {
     /// Create a new Up2Stream driver from an UART object that implements the `Read` and `Write` traits.
-    pub fn new(uart: &mut UART) -> Up2Stream<UART> {
+    pub fn new(mut uart: UART) -> Up2Stream<UART> {
         // This seems to be required by the device before usage.
         // It can fail, but the uart channel is then usable
         block!(uart.write(TERMINATOR)).ok();
