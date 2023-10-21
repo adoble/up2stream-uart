@@ -29,8 +29,9 @@ use up2stream_uart::{Up2Stream, Volume, ScalarParameter, Error};
 // `embedded_hal::serial::{Read, Write}`. This is assigned
 // the variable `serial` in the code example
 
+
 // Initialise the drive using the previously setup serial peripheral
-let mut up2stream_device = Up2Stream::new(&mut serial);
+let mut up2stream_device = Up2Stream::new(serial);
 
 // Set the initial volume
 let initial_vol = Volume::new(50)?;

@@ -12,7 +12,7 @@ fn send_command() {
 
     let mut serial = SerialMock::new(&expectations);
 
-    let mut up2stream_device = Up2Stream::new(&mut serial);
+    let mut up2stream_device = Up2Stream::new(serial.clone());
 
     let _result = up2stream_device
         .send_command("CMD", "on".as_bytes())
@@ -33,7 +33,7 @@ fn send_query() {
 
     let mut serial = SerialMock::new(&expectations);
 
-    let mut up2stream_device = Up2Stream::new(&mut serial);
+    let mut up2stream_device = Up2Stream::new(serial.clone());
 
     let response = up2stream_device.send_query("CMD").unwrap();
 
@@ -55,7 +55,7 @@ fn send_query_rx_with_noise_at_begining() {
     ];
     let mut serial = SerialMock::new(&expectations);
 
-    let mut up2stream_device = Up2Stream::new(&mut serial);
+    let mut up2stream_device = Up2Stream::new(serial.clone());
 
     let response = up2stream_device.send_query("CMD").unwrap();
 
@@ -81,7 +81,7 @@ fn send_query_slow_response() {
     ];
     let mut serial = SerialMock::new(&expectations);
 
-    let mut up2stream_device = Up2Stream::new(&mut serial);
+    let mut up2stream_device = Up2Stream::new(serial.clone());
 
     let response = up2stream_device.send_query("CMD").unwrap();
 
@@ -103,7 +103,7 @@ fn send_query_noise_at_end() {
 
     let mut serial = SerialMock::new(&expectations);
 
-    let mut up2stream_device = Up2Stream::new(&mut serial);
+    let mut up2stream_device = Up2Stream::new(serial.clone());
 
     let response = up2stream_device.send_query("CMD").unwrap();
 
@@ -127,7 +127,7 @@ fn send_query_rx_parameter_list() {
     ];
     let mut serial = SerialMock::new(&expectations);
 
-    let mut up2stream_device = Up2Stream::new(&mut serial);
+    let mut up2stream_device = Up2Stream::new(serial.clone());
 
     let response = up2stream_device.send_query("CMD").unwrap();
 
@@ -147,7 +147,7 @@ fn firmware_version() {
 
     let mut serial = SerialMock::new(&expectations);
 
-    let mut up2stream_device = Up2Stream::new(&mut serial);
+    let mut up2stream_device = Up2Stream::new(serial.clone());
 
     let response = up2stream_device.firmware_version().unwrap();
 
@@ -180,7 +180,7 @@ fn device_status() -> Result<(), Error> {
 
     let mut serial = SerialMock::new(&expectations);
 
-    let mut up2stream_device = Up2Stream::new(&mut serial);
+    let mut up2stream_device = Up2Stream::new(serial.clone());
 
     let device_status = up2stream_device.status().unwrap();
 
@@ -220,7 +220,7 @@ fn execute_system_control() {
 
     let mut serial = SerialMock::new(&expectations);
 
-    let mut up2stream_device = Up2Stream::new(&mut serial);
+    let mut up2stream_device = Up2Stream::new(serial.clone());
 
     let response = up2stream_device.execute_system_control(SystemControl::Reset);
 
@@ -240,7 +240,7 @@ fn internet_connection() {
 
     let mut serial = SerialMock::new(&expectations);
 
-    let mut up2stream_device = Up2Stream::new(&mut serial);
+    let mut up2stream_device = Up2Stream::new(serial.clone());
 
     let response = up2stream_device.internet_connection();
 
@@ -263,7 +263,7 @@ fn audio_out() {
 
     let mut serial = SerialMock::new(&expectations);
 
-    let mut up2stream_device = Up2Stream::new(&mut serial);
+    let mut up2stream_device = Up2Stream::new(serial.clone());
 
     let response = up2stream_device.audio_out();
 
@@ -286,7 +286,7 @@ fn audio_out_err() {
 
     let mut serial = SerialMock::new(&expectations);
 
-    let mut up2stream_device = Up2Stream::new(&mut serial);
+    let mut up2stream_device = Up2Stream::new(serial.clone());
 
     let response = up2stream_device.audio_out();
 
@@ -303,7 +303,7 @@ fn set_audio_out() {
 
     let mut serial = SerialMock::new(&expectations);
 
-    let mut up2stream_device = Up2Stream::new(&mut serial);
+    let mut up2stream_device = Up2Stream::new(serial.clone());
 
     let response = up2stream_device.set_audio_out(true);
 
@@ -323,7 +323,7 @@ fn input_source() {
 
     let mut serial = SerialMock::new(&expectations);
 
-    let mut up2stream_device = Up2Stream::new(&mut serial);
+    let mut up2stream_device = Up2Stream::new(serial.clone());
 
     let response = up2stream_device.input_source();
 
@@ -345,7 +345,7 @@ fn select_input_source() {
 
     let mut serial = SerialMock::new(&expectations);
 
-    let mut up2stream_device = Up2Stream::new(&mut serial);
+    let mut up2stream_device = Up2Stream::new(serial.clone());
 
     let response = up2stream_device.select_input_source(Source::Coax);
 
@@ -370,7 +370,7 @@ fn volume_doc_code_test() -> Result<(), Error> {
 
     let mut serial = SerialMock::new(&initial_expectations);
 
-    let mut up2stream_device = Up2Stream::new(&mut serial);
+    let mut up2stream_device = Up2Stream::new(serial.clone());
 
     // Set the initial volume
     let initial_vol = Volume::new(50)?;
@@ -401,7 +401,7 @@ fn volume() {
 
     let mut serial = SerialMock::new(&expectations);
 
-    let mut up2stream_device = Up2Stream::new(&mut serial);
+    let mut up2stream_device = Up2Stream::new(serial.clone());
 
     let response = up2stream_device.volume();
 
@@ -421,7 +421,7 @@ fn set_volume() {
 
     let mut serial = SerialMock::new(&expectations);
 
-    let mut up2stream_device = Up2Stream::new(&mut serial);
+    let mut up2stream_device = Up2Stream::new(serial.clone());
 
     let response = up2stream_device.set_volume(Volume::new(34).unwrap());
 
@@ -441,7 +441,7 @@ fn mute_status() {
 
     let mut serial = SerialMock::new(&expectations);
 
-    let mut up2stream_device = Up2Stream::new(&mut serial);
+    let mut up2stream_device = Up2Stream::new(serial.clone());
 
     let response = up2stream_device.mute_status().unwrap();
 
@@ -459,7 +459,7 @@ fn set_mute() {
 
     let mut serial = SerialMock::new(&expectations);
 
-    let mut up2stream_device = Up2Stream::new(&mut serial);
+    let mut up2stream_device = Up2Stream::new(serial.clone());
 
     let response = up2stream_device.set_mute(Switch::On);
 
@@ -477,7 +477,7 @@ fn toogle_mute() {
 
     let mut serial = SerialMock::new(&expectations);
 
-    let mut up2stream_device = Up2Stream::new(&mut serial);
+    let mut up2stream_device = Up2Stream::new(serial.clone());
 
     let response = up2stream_device.set_mute(Switch::Toggle);
 
@@ -497,7 +497,7 @@ fn treble() {
 
     let mut serial = SerialMock::new(&expectations);
 
-    let mut up2stream_device = Up2Stream::new(&mut serial);
+    let mut up2stream_device = Up2Stream::new(serial.clone());
 
     let response = up2stream_device.treble();
 
@@ -517,7 +517,7 @@ fn set_treble() {
 
     let mut serial = SerialMock::new(&expectations);
 
-    let mut up2stream_device = Up2Stream::new(&mut serial);
+    let mut up2stream_device = Up2Stream::new(serial.clone());
 
     let response = up2stream_device.set_treble(Treble::new(-6).unwrap());
 
@@ -535,7 +535,7 @@ fn toogle_play_pause() {
 
     let mut serial = SerialMock::new(&expectations);
 
-    let mut up2stream_device = Up2Stream::new(&mut serial);
+    let mut up2stream_device = Up2Stream::new(serial.clone());
 
     let response = up2stream_device.play_pause_toggle();
 
@@ -556,7 +556,7 @@ fn stop() {
 
     let mut serial = SerialMock::new(&expectations);
 
-    let mut up2stream_device = Up2Stream::new(&mut serial);
+    let mut up2stream_device = Up2Stream::new(serial.clone());
 
     let response = up2stream_device.stop();
 
@@ -576,7 +576,7 @@ fn stop_err() {
 
     let mut serial = SerialMock::new(&expectations);
 
-    let mut up2stream_device = Up2Stream::new(&mut serial);
+    let mut up2stream_device = Up2Stream::new(serial.clone());
 
     let response = up2stream_device.stop();
 
@@ -604,7 +604,7 @@ fn next() {
 
     let mut serial = SerialMock::new(&expectations);
 
-    let mut up2stream_device = Up2Stream::new(&mut serial);
+    let mut up2stream_device = Up2Stream::new(serial.clone());
 
     let response = up2stream_device.next_track();
 
@@ -624,7 +624,7 @@ fn next_err() {
 
     let mut serial = SerialMock::new(&expectations);
 
-    let mut up2stream_device = Up2Stream::new(&mut serial);
+    let mut up2stream_device = Up2Stream::new(serial.clone());
 
     let response = up2stream_device.next_track();
 
@@ -652,7 +652,7 @@ fn previous() {
 
     let mut serial = SerialMock::new(&expectations);
 
-    let mut up2stream_device = Up2Stream::new(&mut serial);
+    let mut up2stream_device = Up2Stream::new(serial.clone());
 
     let response = up2stream_device.previous_track();
 
@@ -675,7 +675,7 @@ fn bluetooth_connected() {
 
     let mut serial = SerialMock::new(&expectations);
 
-    let mut up2stream_device = Up2Stream::new(&mut serial);
+    let mut up2stream_device = Up2Stream::new(serial.clone());
 
     let connected_status = up2stream_device.bluetooth_connected().unwrap();
 
@@ -696,7 +696,7 @@ fn connect_bluetooth() {
 
     let mut serial = SerialMock::new(&expectations);
 
-    let mut up2stream_device = Up2Stream::new(&mut serial);
+    let mut up2stream_device = Up2Stream::new(serial.clone());
 
     up2stream_device.connect_bluetooth().unwrap();
 
@@ -715,7 +715,7 @@ fn disconnect_bluetooth() {
 
     let mut serial = SerialMock::new(&expectations);
 
-    let mut up2stream_device = Up2Stream::new(&mut serial);
+    let mut up2stream_device = Up2Stream::new(serial.clone());
 
     up2stream_device.disconnect_bluetooth().unwrap();
 
