@@ -33,8 +33,9 @@
 //! // the variable `serial` in the code example
 //! # let mut serial = SerialMock::new(&initial_expectations);
 //!
+//!
 //! // Initialise the drive using the previously setup serial peripheral
-//! let mut up2stream_device = Up2Stream::new(&mut serial);
+//! let mut up2stream_device = Up2Stream::new(serial);
 //!
 //! // Set the initial volume
 //! let initial_vol = Volume::new(50)?;
@@ -51,7 +52,6 @@
 //!     up2stream_device.set_volume(new_volume)?;
 //! }
 //!
-//! # serial.done();
 //! # Ok(())
 //! # }
 //! ```
@@ -162,7 +162,7 @@ where
     /// use up2stream_uart::Up2Stream;
     /// # use embedded_hal_mock::serial::{Mock as SerialMock, Transaction as SerialTransaction};
     /// # let mut uart =   SerialMock::new(&[SerialTransaction::read(b';')]);
-    /// # let mut up2stream_driver =Up2Stream::new(&mut uart);
+    /// # let mut up2stream_driver =Up2Stream::new(uart);
     /// let firmware : &str = up2stream_driver.firmware_version().unwrap();
     ///
     /// ```
@@ -185,7 +185,7 @@ where
     /// use up2stream_uart::Up2Stream;
     /// # use embedded_hal_mock::serial::{Mock as SerialMock, Transaction as SerialTransaction};
     /// # let mut uart =   SerialMock::new(&[SerialTransaction::read(b';')]);
-    /// # let mut up2stream_driver =Up2Stream::new(&mut uart);
+    /// # let mut up2stream_driver =Up2Stream::new(uart);
     /// let device_status = up2stream_driver.status().unwrap();
     /// let source = device_status.source;
     ///
@@ -222,7 +222,7 @@ where
     /// use up2stream_uart::{Up2Stream, SystemControl};
     /// # use embedded_hal_mock::serial::{Mock as SerialMock, Transaction as SerialTransaction};
     /// # let mut uart =   SerialMock::new(&[SerialTransaction::read(b';')]);
-    /// # let mut up2stream_driver =Up2Stream::new(&mut uart);
+    /// # let mut up2stream_driver =Up2Stream::new(uart);
     /// let device_status = up2stream_driver.execute_system_control(SystemControl::Reboot).unwrap();
     ///
     /// ```
@@ -264,7 +264,7 @@ where
     /// use up2stream_uart::Up2Stream;
     /// # use embedded_hal_mock::serial::{Mock as SerialMock, Transaction as SerialTransaction};
     /// # let mut uart =   SerialMock::new(&[SerialTransaction::read(b';')]);
-    /// # let mut up2stream_driver =Up2Stream::new(&mut uart);
+    /// # let mut up2stream_driver =Up2Stream::new(uart);
     /// // Enable audio output
     /// up2stream_driver.set_audio_out(true).unwrap();
     ///
@@ -284,7 +284,7 @@ where
     /// use up2stream_uart::{Up2Stream, Source};
     /// # use embedded_hal_mock::serial::{Mock as SerialMock, Transaction as SerialTransaction};
     /// # let mut uart =   SerialMock::new(&[SerialTransaction::read(b';')]);
-    /// # let mut up2stream_driver =Up2Stream::new(&mut uart);
+    /// # let mut up2stream_driver =Up2Stream::new(uart);
     ///
     /// let source: Source = up2stream_driver.input_source().unwrap();
     /// match source {
@@ -307,7 +307,7 @@ where
     /// use up2stream_uart::{Up2Stream, Source};
     /// # use embedded_hal_mock::serial::{Mock as SerialMock, Transaction as SerialTransaction};
     /// # let mut uart =   SerialMock::new(&[SerialTransaction::read(b';')]);
-    /// # let mut up2stream_driver =Up2Stream::new(&mut uart);
+    /// # let mut up2stream_driver =Up2Stream::new(uart);
     ///
     /// up2stream_driver.select_input_source(Source::Bluetooth).unwrap();
     /// ```
@@ -323,7 +323,7 @@ where
     ///  use up2stream_uart::{Up2Stream, Volume, ScalarParameter};
     ///  # use embedded_hal_mock::serial::{Mock as SerialMock, Transaction as SerialTransaction};
     ///  # let mut uart =   SerialMock::new(&[SerialTransaction::read(b';')]);
-    ///  # let mut up2stream_driver =Up2Stream::new(&mut uart);
+    ///  # let mut up2stream_driver =Up2Stream::new(uart);
     /// let volume = up2stream_driver.volume().unwrap();
     /// // Now get the value of the volume
     /// let volume_value: i8 = volume.get();
@@ -346,7 +346,7 @@ where
     /// use up2stream_uart::{Up2Stream, Volume, ScalarParameter};
     ///  # use embedded_hal_mock::serial::{Mock as SerialMock, Transaction as SerialTransaction};
     ///  # let mut uart =   SerialMock::new(&[SerialTransaction::read(b';')]);
-    ///  # let mut up2stream_driver =Up2Stream::new(&mut uart);
+    ///  # let mut up2stream_driver =Up2Stream::new(uart);
     /// let volume = Volume::new(52).unwrap();
     /// up2stream_driver.set_volume(volume).unwrap();
     /// ```
@@ -373,7 +373,7 @@ where
     /// use up2stream_uart::{Up2Stream, Switch};
     ///  # use embedded_hal_mock::serial::{Mock as SerialMock, Transaction as SerialTransaction};
     ///  # let mut uart =   SerialMock::new(&[SerialTransaction::read(b';')]);
-    ///  # let mut up2stream_driver =Up2Stream::new(&mut uart);
+    ///  # let mut up2stream_driver =Up2Stream::new(uart);
     /// up2stream_driver.set_mute(Switch::On).unwrap();
     /// ```
     /// To toggle the mute status:
@@ -381,7 +381,7 @@ where
     /// use up2stream_uart::{Up2Stream, Switch};
     ///  # use embedded_hal_mock::serial::{Mock as SerialMock, Transaction as SerialTransaction};
     ///  # let mut uart =   SerialMock::new(&[SerialTransaction::read(b';')]);
-    ///  # let mut up2stream_driver =Up2Stream::new(&mut uart);
+    ///  # let mut up2stream_driver =Up2Stream::new(uart);
     /// up2stream_driver.set_mute(Switch::Toggle).unwrap();
     /// ```
     pub fn set_mute(&mut self, switch: Switch) -> Result<(), Error> {
@@ -394,7 +394,7 @@ where
     /// use up2stream_uart::{Up2Stream, Bass};
     ///  # use embedded_hal_mock::serial::{Mock as SerialMock, Transaction as SerialTransaction};
     ///  # let mut uart =   SerialMock::new(&[SerialTransaction::read(b';')]);
-    ///  # let mut up2stream_driver =Up2Stream::new(&mut uart);
+    ///  # let mut up2stream_driver =Up2Stream::new(uart);
     /// let bass: Bass = up2stream_driver.bass().unwrap();
     ///
     /// ```
@@ -413,7 +413,7 @@ where
     /// use up2stream_uart::{Up2Stream, Bass};
     ///  # use embedded_hal_mock::serial::{Mock as SerialMock, Transaction as SerialTransaction};
     ///  # let mut uart =   SerialMock::new(&[SerialTransaction::read(b';')]);
-    ///  # let mut up2stream_driver =Up2Stream::new(&mut uart);
+    ///  # let mut up2stream_driver =Up2Stream::new(uart);
     /// let bass = Bass::new(-6).unwrap();
     /// up2stream_driver.set_bass(bass).unwrap();
     ///
@@ -430,7 +430,7 @@ where
     /// use up2stream_uart::{Up2Stream, Treble, ScalarParameter};
     ///  # use embedded_hal_mock::serial::{Mock as SerialMock, Transaction as SerialTransaction};
     ///  # let mut uart =   SerialMock::new(&[SerialTransaction::read(b';')]);
-    ///  # let mut up2stream_driver =Up2Stream::new(&mut uart);
+    ///  # let mut up2stream_driver =Up2Stream::new(uart);
     ///
     /// let treble = up2stream_driver.treble().unwrap();
     /// let treble_value : i8 = treble.get();
@@ -451,7 +451,7 @@ where
     /// use up2stream_uart::{Up2Stream, Treble};
     ///  # use embedded_hal_mock::serial::{Mock as SerialMock, Transaction as SerialTransaction};
     ///  # let mut uart =   SerialMock::new(&[SerialTransaction::read(b';')]);
-    ///  # let mut up2stream_driver =Up2Stream::new(&mut uart);
+    ///  # let mut up2stream_driver =Up2Stream::new(uart);
     /// let treble = Treble::new(-6).unwrap();
     /// up2stream_driver.set_treble(treble).unwrap();
     ///
@@ -468,7 +468,7 @@ where
     ///  # use up2stream_uart::{Up2Stream};
     ///  # use embedded_hal_mock::serial::{Mock as SerialMock, Transaction as SerialTransaction};
     ///  # let mut uart =   SerialMock::new(&[SerialTransaction::read(b';')]);
-    ///  # let mut up2stream_driver =Up2Stream::new(&mut uart);
+    ///  # let mut up2stream_driver =Up2Stream::new(uart);
     ///
     ///  up2stream_driver.play_pause_toggle().unwrap();
     ///
